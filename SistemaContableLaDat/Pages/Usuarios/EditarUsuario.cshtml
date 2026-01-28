@@ -1,0 +1,73 @@
+﻿@page
+@model SistemaContableLaDat.Pages.Usuarios.EditarUsuarioModel
+@{
+    ViewData["Title"] = "Editar Usuario";
+    Layout = "_PrincipalLayout";
+}
+
+<h1 class="mt-4">Editar Usuario</h1>
+
+<a asp-page="/Usuarios/ListarUsuarios" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Regresar
+</a>
+<button type="submit" class="btn btn-dark" onclick="return validarContrasenia()">
+    <i class="bi bi-save"></i> Guardar
+</button>
+
+<div class="container mt-5 d-flex">
+    <div class="card shadow-sm border-0 w-50" style="background-color: #d9d9d9;">
+        <div class="card-body">
+
+            <form method="post">
+
+                <div class="mb-3">
+                    <label asp-for="Usuario.IdUsuario" class="form-label"><strong>Id Usuario</strong></label>
+                    <input asp-for="Usuario.IdUsuario" class="form-control" readonly />
+                    <span asp-validation-for="Usuario.IdUsuario" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Usuario.Usuario" class="form-label"><strong>Usuario</strong></label>
+                    <input asp-for="Usuario.Usuario" class="form-control" />
+                    <span asp-validation-for="Usuario.Usuario" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Usuario.NombreUsuario" class="form-label"><strong>Nombre</strong></label>
+                    <input asp-for="Usuario.NombreUsuario" class="form-control" />
+                    <span asp-validation-for="Usuario.NombreUsuario" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Usuario.ApellidoUsuario" class="form-label"><strong>Apellido</strong></label>
+                    <input asp-for="Usuario.ApellidoUsuario" class="form-control" />
+                    <span asp-validation-for="Usuario.ApellidoUsuario" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Usuario.CorreoElectronico" class="form-label"><strong>Correo Electrónico</strong></label>
+                    <input asp-for="Usuario.CorreoElectronico" type="email" class="form-control" />
+                    <span asp-validation-for="Usuario.CorreoElectronico" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Usuario.Estado" class="form-label"><strong>Estado</strong></label>
+                    <select asp-for="Usuario.Estado" class="form-select">
+                        <option value="">-- Seleccione estado --</option>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                        <option value="Bloqueado">Bloqueado</option>
+                    </select>
+                    <span asp-validation-for="Usuario.Estado" class="text-danger"></span>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,48 @@
+﻿@page
+@model SistemaContableLaDat.Pages.PrincipalModel
+@{
+    Layout = "/Pages/Shared/_PrincipalLayout.cshtml"; // layout con sidebar
+    ViewData["Title"] = "Página Principal";
+}
+<h1 class="display-4">¡Bienvenido, @Model.NombreCompleto!</h1>
+
+<!-- Modal -->
+<div class="modal fade" id="sessionExpiredModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sesión expirada</h5>
+            </div>
+            <div class="modal-body">
+                <p>Tu sesión ha expirado por inactividad. Serás redirigido al login.</p>
+            </div>
+            <div class="modal-footer">
+                <a class="btn btn-primary" href="/Index">Ir al login</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutos
+        let inactivityTimer;
+
+        function resetTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(showModal, INACTIVITY_TIMEOUT);
+        }
+
+        function showModal() {
+            const modal = new bootstrap.Modal(document.getElementById('sessionExpiredModal'));
+            modal.show();
+        }
+
+        // Eventos que indican actividad
+        window.onload = resetTimer;
+        document.onmousemove = resetTimer;
+        document.onkeypress = resetTimer;
+        document.onclick = resetTimer;
+        document.onscroll = resetTimer;
+    </script>
+}
