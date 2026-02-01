@@ -1,0 +1,23 @@
+﻿@page
+@model SistemaContableLaDat.Web.Pages.Asientos.EditarModel
+
+<h2>Editar asiento</h2>
+
+<form method="post">
+    <input type="hidden" asp-for="Encabezado.IdAsiento" />
+    <input type="hidden" id="DetallesJson" name="DetallesJson" />
+
+
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+</form>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            @foreach (var d in Model.Detalles)
+            {
+                    @:agregarFila(@d.IdCuentaContable, "@d.TipoMovimiento", @d.Monto);
+            }
+        });
+    </script>
+}

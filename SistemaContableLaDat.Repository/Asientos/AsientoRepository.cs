@@ -16,54 +16,128 @@ namespace SistemaContableLaDat.Repository.Asientos
 
         public IEnumerable<AsientoListadoDto> ListarPorPeriodo(int idPeriodo)
         {
-            using var connection = _connectionFactory.CreateConnection();
-            return connection.Query<AsientoListadoDto>(
+            using var cn = _connectionFactory.CreateConnection();
+            return cn.Query<AsientoListadoDto>(
                 "sp_asientos_listar_por_periodo",
                 new { p_id_periodo = idPeriodo },
                 commandType: CommandType.StoredProcedure
             );
         }
 
-        public int InsertarEncabezado(AsientoEncabezadoEntity asiento)
+        public AsientoEncabezadoEntity? ObtenerPorId(int idAsiento)
         {
-            using var connection = _connectionFactory.CreateConnection();
+            using var cn = _connectionFactory.CreateConnection();
+            return cn.QueryFirstOrDefault<AsientoEncabezadoEntity>(
+                "SELECT * FROM asientocontableencabezado WHERE IdAsiento = @id",
+                new { id = idAsiento }
+            );
+        }
 
-            return connection.ExecuteScalar<int>(
+        public int InsertarEncabezado(AsientoEncabezadoEntity e)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            var p = new DynamicParameters();
+            p.Add("p_id_periodo", e.IdPeriodo);
+            p.Add("p_id_usuario", e.IdUsuario);
+            p.Add("p_fecha", e.Fecha);
+            p.Add("p_codigo", e.Codigo);
+            p.Add("p_referencia", e.Referencia);
+            p.Add("p_id_estado", e.IdEstadoAsiento);
+            p.Add("p_id_asiento", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            cn.Execute(
                 "sp_asiento_insertar_encabezado",
+                p,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return p.Get<int>("p_id_asiento");
+        }
+
+
+
+
+        public void InsertarDetalle(AsientoDetalleEntity d)
+        {
+            using var cn = _connectionFactory.CreateConnection(); // 🔴 AQUÍ
+
+            cn.Execute(
+                "sp_asiento_insertar_detalle",
                 new
                 {
-                    p_id_periodo = asiento.IdPeriodo,
-                    p_id_usuario = asiento.IdUsuario,
-                    p_fecha = asiento.FechaAsiento,
-                    p_referencia = asiento.Referencia
+                    p_id_asiento = d.IdAsiento,
+                    p_id_cuenta = d.IdCuentaContable,
+                    p_tipo_mov = d.TipoMovimiento,
+                    p_monto = d.Monto,
+                    p_descripcion = d.Descripcion
                 },
                 commandType: CommandType.StoredProcedure
             );
         }
 
-        public void InsertarDetalle(AsientoDetalleEntity detalle)
-        {
-            using var connection = _connectionFactory.CreateConnection();
 
-            connection.Execute(
-                "sp_asiento_insertar_detalle",
-                new
-                {
-                    p_id_asiento = detalle.IdAsientoEncabezado,
-                    p_id_cuenta = detalle.IdCuentaContable,
-                    p_tipo_mov = detalle.TipoMovimiento,
-                    p_monto = detalle.Monto,
-                    p_descripcion = detalle.Descripcion
-                },
-                commandType: CommandType.StoredProcedure
+
+
+        public void ActualizarEncabezado(AsientoEncabezadoEntity a)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+            cn.Execute(
+                @"UPDATE asientocontableencabezado
+                  SET Fecha = @Fecha,
+                      Referencia = @Referencia,
+                      IdEstadoAsiento = @IdEstadoAsiento,
+                      Codigo = @Codigo,   
+                      Consecutivo = @Consecutivo 
+                  WHERE IdAsiento = @IdAsiento",
+                a
             );
+        }
+
+        public IEnumerable<AsientoDetalleEntity> ObtenerDetallesPorAsiento(int idAsiento)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            return cn.Query<AsientoDetalleEntity>(
+                @"SELECT 
+            IdAsientoDetalle,
+            IdAsiento AS IdAsiento,
+            IdCuentaContable,
+            TipoMovimiento,
+            Monto,
+            Descripcion
+          FROM asientocontabledetalle
+          WHERE IdAsiento = @id",
+                new { id = idAsiento }
+            );
+        }
+
+
+        public void EliminarDetalles(int idAsiento)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+            // Adaptado a tabla real: asientocontabledetalle
+            cn.Execute(
+                "DELETE FROM asientocontabledetalle WHERE IdAsiento = @id",
+                new { id = idAsiento }
+            );
+        }
+
+        public bool TieneRelaciones(int idAsiento)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+            // Adaptado a tabla real: asientocontabledetalle
+            int count = cn.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM asientocontabledetalle WHERE IdAsiento = @id",
+                new { id = idAsiento}
+            );
+            return count > 0;
         }
 
         public void Anular(int idAsiento)
         {
-            using var connection = _connectionFactory.CreateConnection();
-
-            connection.Execute(
+            using var cn = _connectionFactory.CreateConnection();
+            cn.Execute(
                 "sp_asiento_anular",
                 new { p_id_asiento = idAsiento },
                 commandType: CommandType.StoredProcedure

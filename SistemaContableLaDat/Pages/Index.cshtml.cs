@@ -42,7 +42,8 @@ namespace SistemaContableLaDat.Pages
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario),
+                new Claim("IdUsuario", usuario.IdUsuario.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString()),
                 new Claim("NombreUsuario", usuario.NombreUsuario),
                 new Claim("ApellidoUsuario", usuario.ApellidoUsuario),
                 new Claim("NombreCompleto", $"{usuario.NombreUsuario} {usuario.ApellidoUsuario}".Trim())

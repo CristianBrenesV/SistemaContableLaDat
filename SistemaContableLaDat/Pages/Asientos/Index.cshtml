@@ -1,0 +1,59 @@
+﻿@page
+@model SistemaContableLaDat.Web.Pages.Asientos.IndexModel
+@{
+    ViewData["Title"] = "Asientos contables";
+    Layout = "_PrincipalLayout";
+}
+
+<h1 class="mt-4">Asientos contables</h1>
+
+<p>
+    <a asp-page="Crear" class="btn btn-dark">
+        <i class="bi bi-plus-circle"></i> Nuevo asiento
+    </a>
+</p>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Consecutivo</th>
+                <th>Fecha</th>
+                <th>Referencia</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var a in Model.Asientos)
+            {
+                <tr>
+                    <td>@a.Consecutivo</td>
+                    <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
+                    <td>@a.Referencia</td>
+                    <td>@a.EstadoNombre</td>
+                    <td>
+                        @if (a.PuedeEditar)
+                        {
+                            <a asp-page="Editar"
+                               asp-route-id="@a.IdAsiento"
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil-square"></i> Editar
+                            </a>
+
+                            <form method="post"
+                                  asp-page-handler="Anular"
+                                  asp-route-id="@a.IdAsiento"
+                                  class="d-inline">
+                                <button type="submit"
+                                        class="btn btn-sm btn-dark">
+                                    <i class="bi bi-trash3"></i> Anular
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
