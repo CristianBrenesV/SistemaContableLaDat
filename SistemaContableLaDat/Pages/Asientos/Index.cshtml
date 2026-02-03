@@ -1,59 +1,129 @@
 ﻿@page
 @model SistemaContableLaDat.Web.Pages.Asientos.IndexModel
+@using SistemaContableLaDat.Entities.Asientos
+
 @{
-    ViewData["Title"] = "Asientos contables";
+    ViewData["Title"] = "Administración de Asientos";
     Layout = "_PrincipalLayout";
 }
 
-<h1 class="mt-4">Asientos contables</h1>
-
+<h1 class="mt-4">Administración de Asientos Contables</h1>
 <p>
-    <a asp-page="Crear" class="btn btn-dark">
-        <i class="bi bi-plus-circle"></i> Nuevo asiento
+    <a class="btn btn-dark" asp-page="Crear">
+        <i class="bi bi-plus-circle"></i> Nuevo
     </a>
 </p>
 
-<div class="table-responsive">
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>Consecutivo</th>
-                <th>Fecha</th>
-                <th>Referencia</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var a in Model.Asientos)
-            {
-                <tr>
-                    <td>@a.Consecutivo</td>
-                    <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
-                    <td>@a.Referencia</td>
-                    <td>@a.EstadoNombre</td>
-                    <td>
-                        @if (a.PuedeEditar)
-                        {
-                            <a asp-page="Editar"
-                               asp-route-id="@a.IdAsiento"
-                               class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-pencil-square"></i> Editar
-                            </a>
 
-                            <form method="post"
-                                  asp-page-handler="Anular"
-                                  asp-route-id="@a.IdAsiento"
-                                  class="d-inline">
-                                <button type="submit"
-                                        class="btn btn-sm btn-dark">
-                                    <i class="bi bi-trash3"></i> Anular
-                                </button>
-                            </form>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
+<table class="table table-hover align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Código</th>
+            <th>Referencia</th>
+            <th>Estado</th>
+            <th>Balance</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var a in Model.Asientos)
+        {
+            var estadoClass = a.IdEstadoAsiento switch
+            {
+                (int)EstadoAsiento.Borrador => "table-warning",
+                (int)EstadoAsiento.PendienteAprobar => "table-info",
+                (int)EstadoAsiento.Aprobado => "table-success",
+                _ => ""
+            };
+
+            <tr class="@estadoClass">
+                <td>@a.Consecutivo</td>
+                <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
+                <td>@a.Codigo</td>
+                <td>@a.Referencia</td>
+                <td>
+                    <span class="badge bg-secondary">@a.EstadoNombre</span>
+                </td>
+                <td>
+                    @if (a.EstaBalanceado)
+                    {
+                        <span class="badge bg-success">Balanceado</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">No balanceado</span>
+                    }
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#det-@a.IdAsiento"
+                            onclick="cargarDetalle(@a.IdAsiento)">
+                        Detalle
+                    </button>
+
+                    @if (a.PuedeEditar)
+                    {
+                        <a asp-page="Editar"
+                           asp-route-id="@a.IdAsiento"
+                           class="btn btn-sm btn-outline-secondary">
+                            Editar
+                        </a>
+
+                        <form method="post"
+                              asp-page-handler="Anular"
+                              asp-route-id="@a.IdAsiento"
+                              class="d-inline">
+                            <button class="btn btn-sm btn-outline-danger">
+                                Anular
+                            </button>
+                        </form>
+                    }
+                </td>
+            </tr>
+
+            <tr class="collapse bg-light" id="det-@a.IdAsiento">
+                <td colspan="7">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Cuenta</th>
+                                <th>Tipo</th>
+                                <th>Monto</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detalle-@a.IdAsiento">
+                            <tr>
+                                <td colspan="4" class="text-muted">
+                                    Cargando…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    function cargarDetalle(id) {
+        fetch(`?handler=Detalle&idAsiento=${id}`)
+            .then(r => r.json())
+            .then(data => {
+                let html = "";
+                data.forEach(d => {
+                    html += `<tr>
+                        <td>${d.cuenta}</td>
+                        <td>${d.tipoMovimiento}</td>
+                        <td>${d.monto}</td>
+                        <td>${d.descripcion}</td>
+                    </tr>`;
+                });
+                document.getElementById(`detalle-${id}`).innerHTML = html;
+            });
+    }
+</script>

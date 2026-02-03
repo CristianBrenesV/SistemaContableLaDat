@@ -8,6 +8,9 @@
         public string Referencia { get; set; } = string.Empty;
         public int IdEstadoAsiento { get; set; }
         public string EstadoNombre { get; set; } = string.Empty;
+        public bool EstaBalanceado { get; set; }
+        public string Codigo { get; set; } = string.Empty;
+
 
         public bool PuedeEditar =>
             IdEstadoAsiento == (int)EstadoAsiento.Borrador ||

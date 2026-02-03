@@ -29,6 +29,11 @@ namespace SistemaContableLaDat.Service.Asientos
             return _repo.ListarPorPeriodo(idPeriodo);
         }
 
+        public async Task<IEnumerable<AsientoDetalleDto>> ObtenerDetalleAsync(int idAsiento)
+        {
+            return await _repo.ListarDetalleAsync(idAsiento);
+        }
+
         public async Task<int> CrearAsync(
             AsientoEncabezadoEntity encabezado,
             List<AsientoDetalleEntity> detalles,
@@ -37,19 +42,17 @@ namespace SistemaContableLaDat.Service.Asientos
             if (detalles == null || !detalles.Any())
                 throw new Exception("El asiento debe tener detalle.");
 
+            if (detalles.Any(d => d.IdCuentaContable <= 0))
+                throw new Exception("Todas las líneas deben tener cuenta contable.");
+
             if (detalles.Any(d => d.Monto <= 0))
                 throw new Exception("Monto inválido.");
 
             encabezado.IdUsuario = idUsuario;
             encabezado.IdPeriodo = encabezado.IdPeriodo == 0 ? 1 : encabezado.IdPeriodo;
 
-            decimal debe = detalles
-                .Where(d => d.TipoMovimiento == "D")
-                .Sum(d => d.Monto);
-
-            decimal haber = detalles
-                .Where(d => d.TipoMovimiento == "C")
-                .Sum(d => d.Monto);
+            decimal debe = detalles.Where(d => d.TipoMovimiento == "D").Sum(d => d.Monto);
+            decimal haber = detalles.Where(d => d.TipoMovimiento == "C").Sum(d => d.Monto);
 
             encabezado.IdEstadoAsiento =
                 debe == haber
@@ -81,6 +84,12 @@ namespace SistemaContableLaDat.Service.Asientos
             List<AsientoDetalleEntity> detalles,
             int idUsuario)
         {
+            if (detalles == null || !detalles.Any())
+                throw new Exception("El asiento debe tener detalle.");
+
+            if (detalles.Any(d => d.IdCuentaContable <= 0))
+                throw new Exception("Todas las líneas deben tener cuenta contable.");
+
             var actual = _repo.ObtenerPorId(encabezado.IdAsiento)
                 ?? throw new Exception("Asiento no existe.");
 
@@ -88,13 +97,14 @@ namespace SistemaContableLaDat.Service.Asientos
                 actual.IdEstadoAsiento != (int)EstadoAsiento.PendienteAprobar)
                 throw new Exception("Estado no editable.");
 
-            decimal debe = detalles
-                .Where(d => d.TipoMovimiento == "D")
-                .Sum(d => d.Monto);
+            var antes = new
+            {
+                Encabezado = actual,
+                Detalles = _repo.ObtenerDetallesPorAsiento(encabezado.IdAsiento)
+            };
 
-            decimal haber = detalles
-                .Where(d => d.TipoMovimiento == "C")
-                .Sum(d => d.Monto);
+            decimal debe = detalles.Where(d => d.TipoMovimiento == "D").Sum(d => d.Monto);
+            decimal haber = detalles.Where(d => d.TipoMovimiento == "C").Sum(d => d.Monto);
 
             encabezado.IdEstadoAsiento =
                 debe == haber
@@ -115,7 +125,7 @@ namespace SistemaContableLaDat.Service.Asientos
             await _bitacora.RegistrarAccionAsync(
                 idUsuario.ToString(),
                 "Edición de asiento",
-                new { encabezado, detalles }
+                new { Antes = antes, Despues = new { encabezado, detalles } }
             );
 
             scope.Complete();

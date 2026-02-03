@@ -24,6 +24,17 @@ namespace SistemaContableLaDat.Repository.Asientos
             );
         }
 
+        public async Task<IEnumerable<AsientoDetalleDto>> ListarDetalleAsync(int idAsiento)
+        {
+            using var conn = _connectionFactory.CreateConnection();
+            return await conn.QueryAsync<AsientoDetalleDto>(
+                "sp_asiento_listar_detalle",
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+
         public AsientoEncabezadoEntity? ObtenerPorId(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();

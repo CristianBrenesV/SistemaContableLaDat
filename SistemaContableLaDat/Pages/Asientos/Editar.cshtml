@@ -1,23 +1,205 @@
-﻿@page
+﻿@page "{id:int}"
 @model SistemaContableLaDat.Web.Pages.Asientos.EditarModel
+@using SistemaContableLaDat.Entities.Asientos
 
-<h2>Editar asiento</h2>
+@{
+    ViewData["Title"] = "Editar Asiento";
+    Layout = "_PrincipalLayout";
 
-<form method="post">
+    var opcionesCuentas = "<option value=\"\">-- Cuenta --</option>";
+    foreach (var c in Model.Cuentas)
+    {
+        opcionesCuentas += $"<option value='{c.IdCuenta}'>{c.CodigoCuenta} - {c.Nombre}</option>";
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Editar Asiento Contable</h2>
+
+    <div>
+        <a asp-page="Index" class="btn btn-outline-secondary me-2">← Volver</a>
+        <button type="submit" form="formEditar" class="btn btn-dark">Guardar</button>
+    </div>
+</div>
+
+<div class="alert alert-danger d-none" id="alertaBalance">
+    El asiento no está balanceado. El total Débito debe ser igual al Crédito.
+</div>
+
+<div class="mb-3">
+    <span class="me-3"><strong>Débito:</strong> <span id="totalDebe">0.00</span></span>
+    <span class="me-3"><strong>Crédito:</strong> <span id="totalHaber">0.00</span></span>
+    <strong>Estado:</strong>
+    <span id="estadoBalance" class="badge"></span>
+</div>
+
+<form method="post" id="formEditar">
     <input type="hidden" asp-for="Encabezado.IdAsiento" />
     <input type="hidden" id="DetallesJson" name="DetallesJson" />
 
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label class="form-label">Código</label>
+            <input class="form-control" value="@Model.Encabezado.Codigo" readonly />
+        </div>
 
-    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        <div class="col-md-3">
+            <label class="form-label">Fecha</label>
+            <input class="form-control"
+                   value="@Model.Encabezado.Fecha.ToString("dd/MM/yyyy")"
+                   readonly />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Referencia</label>
+            <input asp-for="Encabezado.Referencia" class="form-control" />
+        </div>
+    </div>
+
+    <hr />
+
+    <h5>Detalle del asiento</h5>
+
+    <table class="table table-sm table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th style="width:25%">Cuenta</th>
+                <th style="width:15%">Tipo</th>
+                <th style="width:15%">Monto</th>
+                <th>Descripción</th>
+                <th style="width:5%"></th>
+            </tr>
+        </thead>
+        <tbody id="detalleBody"></tbody>
+    </table>
+
+    <button type="button" class="btn btn-outline-primary btn-sm" onclick="agregarFilaVacia()">
+        + Agregar línea
+    </button>
 </form>
 
 @section Scripts {
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
+        let detalles = [];
+
+        function agregarFilaVacia() {
+            detalles.push({
+                idCuentaContable: "",
+                tipoMovimiento: "D",
+                monto: 0,
+                descripcion: ""
+            });
+            render();
+        }
+
+        function eliminarFila(index) {
+            detalles.splice(index, 1);
+            render();
+        }
+
+        function recalcularBalance() {
+            let debe = 0;
+            let haber = 0;
+            let valido = true;
+
+            detalles.forEach(d => {
+                if (!d.idCuentaContable) valido = false;
+
+                const monto = parseFloat(d.monto) || 0;
+                if (d.tipoMovimiento === "D") debe += monto;
+                if (d.tipoMovimiento === "C") haber += monto;
+            });
+
+            totalDebe.innerText = debe.toFixed(2);
+            totalHaber.innerText = haber.toFixed(2);
+
+            if (debe === haber && debe > 0 && valido) {
+                estadoBalance.innerText = "BALANCEADO";
+                estadoBalance.className = "badge bg-success";
+                return true;
+            } else {
+                estadoBalance.innerText = "NO BALANCEADO";
+                estadoBalance.className = "badge bg-danger";
+                return false;
+            }
+        }
+
+        function getOpcionesCuenta(seleccionada) {
+            let html = `<option value="">-- Cuenta --</option>`;
+
+            @foreach (var c in Model.Cuentas)
+            {
+                    @:html += `<option value="@c.IdCuenta" ${seleccionada === @c.IdCuenta ? "selected" : ""}>@c.CodigoCuenta - @c.Nombre</option>`;
+            }
+
+            return html;
+        }
+
+
+        function render() {
+            let html = "";
+
+            detalles.forEach((d, i) => {
+                html += `
+                <tr>
+                    <td>
+                        <select class="form-select"
+                            onchange="detalles[${i}].idCuentaContable=parseInt(this.value); recalcularBalance()">
+                            ${getOpcionesCuenta(d.idCuentaContable)}
+                        </select>
+                    </td>
+
+                    <td>
+                        <select class="form-select"
+                            onchange="detalles[${i}].tipoMovimiento=this.value; recalcularBalance()">
+                            <option value="D" ${d.tipoMovimiento === "D" ? "selected" : ""}>Débito</option>
+                            <option value="C" ${d.tipoMovimiento === "C" ? "selected" : ""}>Crédito</option>
+                        </select>
+                    </td>
+
+                    <td>
+                        <input type="number" step="0.01" class="form-control"
+                            value="${d.monto}"
+                            onchange="detalles[${i}].monto=parseFloat(this.value); recalcularBalance()">
+                    </td>
+
+                    <td>
+                        <input class="form-control"
+                            value="${d.descripcion ?? ""}"
+                            onchange="detalles[${i}].descripcion=this.value">
+                    </td>
+
+                    <td class="text-center">
+                        <button type="button" class="btn btn-outline-danger btn-sm"
+                            onclick="eliminarFila(${i})">✕</button>
+                    </td>
+                </tr>`;
+            });
+
+            detalleBody.innerHTML = html;
+            DetallesJson.value = JSON.stringify(detalles);
+            recalcularBalance();
+        }
+
+
+        document.getElementById("formEditar").addEventListener("submit", e => {
+            if (!recalcularBalance()) {
+                e.preventDefault();
+                alertaBalance.classList.remove("d-none");
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
             @foreach (var d in Model.Detalles)
             {
-                    @:agregarFila(@d.IdCuentaContable, "@d.TipoMovimiento", @d.Monto);
+                    @:detalles.push({
+                    @:  idCuentaContable: @d.IdCuentaContable,
+                    @:  tipoMovimiento: "@d.TipoMovimiento",
+                    @:  monto: @d.Monto,
+                    @:  descripcion: "@d.Descripcion"
+                    @:});
             }
+            render();
         });
     </script>
 }

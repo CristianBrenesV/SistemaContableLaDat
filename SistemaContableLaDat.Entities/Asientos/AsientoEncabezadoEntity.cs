@@ -10,8 +10,6 @@
         public int IdPeriodo { get; set; }
         public int IdEstadoAsiento { get; set; }
         public int IdUsuario { get; set; }
-
-        // PARA EDICIÓN
         public List<AsientoDetalleEntity> Detalles { get; set; } = new();
     }
 }
