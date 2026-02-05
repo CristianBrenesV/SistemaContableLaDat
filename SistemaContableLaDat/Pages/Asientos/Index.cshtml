@@ -72,14 +72,11 @@
                             Editar
                         </a>
 
-                        <form method="post"
-                              asp-page-handler="Anular"
-                              asp-route-id="@a.IdAsiento"
-                              class="d-inline">
-                            <button class="btn btn-sm btn-outline-danger">
-                                Anular
-                            </button>
-                        </form>
+                        <a asp-page="Anular"
+                           asp-route-id="@a.IdAsiento"
+                           class="btn btn-sm btn-outline-danger">
+                            Anular
+                        </a>
                     }
                 </td>
             </tr>

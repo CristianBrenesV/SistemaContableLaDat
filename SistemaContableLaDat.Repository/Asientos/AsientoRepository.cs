@@ -1,7 +1,8 @@
 ﻿using Dapper;
-using System.Data;
 using SistemaContableLaDat.Entities.Asientos;
+using SistemaContableLaDat.Entities.Cuentas;
 using SistemaContableLaDat.Repository.Infrastructure;
+using System.Data;
 
 namespace SistemaContableLaDat.Repository.Asientos
 {
@@ -127,7 +128,6 @@ namespace SistemaContableLaDat.Repository.Asientos
         public void EliminarDetalles(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
-            // Adaptado a tabla real: asientocontabledetalle
             cn.Execute(
                 "DELETE FROM asientocontabledetalle WHERE IdAsiento = @id",
                 new { id = idAsiento }
@@ -137,7 +137,6 @@ namespace SistemaContableLaDat.Repository.Asientos
         public bool TieneRelaciones(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
-            // Adaptado a tabla real: asientocontabledetalle
             int count = cn.ExecuteScalar<int>(
                 "SELECT COUNT(*) FROM asientocontabledetalle WHERE IdAsiento = @id",
                 new { id = idAsiento}
@@ -154,5 +153,18 @@ namespace SistemaContableLaDat.Repository.Asientos
                 commandType: CommandType.StoredProcedure
             );
         }
+        public async Task<IEnumerable<CuentaComboDto>> ListarCuentasParaComboAsync()
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            string sql = @"SELECT IdCuenta AS IdCuentaContable, 
+                          Nombre AS Descripcion 
+                   FROM cuentascontables
+                   WHERE Estado = 'Activa' 
+                   ORDER BY CodigoCuenta";
+
+            return await cn.QueryAsync<CuentaComboDto>(sql);
+        }
+
     }
 }

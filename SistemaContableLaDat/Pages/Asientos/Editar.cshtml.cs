@@ -1,82 +1,69 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using SistemaContableLaDat.Entities.Asientos;
-using SistemaContableLaDat.Entities.Cuentas;
 using SistemaContableLaDat.Service.Asientos;
-using SistemaContableLaDat.Service.Cuentas;
-using System.Security.Claims;
-using System.Text.Json;
 
-namespace SistemaContableLaDat.Web.Pages.Asientos
+namespace SistemaContableLaDat.Pages.Asientos
 {
-    [Authorize]
     public class EditarModel : PageModel
     {
-        private readonly AsientoService _service;
-        private readonly CuentaService _cuentaService;
+        private readonly AsientoService _asientoService;
 
-        public EditarModel(
-            AsientoService service,
-            CuentaService cuentaService)
+        public EditarModel(AsientoService asientoService)
         {
-            _service = service;
-            _cuentaService = cuentaService;
+            _asientoService = asientoService;
         }
 
         [BindProperty]
         public AsientoEncabezadoEntity Encabezado { get; set; } = new();
 
         [BindProperty]
-        public string DetallesJson { get; set; } = string.Empty;
-
         public List<AsientoDetalleEntity> Detalles { get; set; } = new();
-        public List<CuentaComboDto> Cuentas { get; set; } = new();
+        public List<SistemaContableLaDat.Entities.Cuentas.CuentaComboDto> CuentasDisponibles { get; set; } = new();
+
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
-            var asiento = await _service.ObtenerParaEdicionAsync(id);
+            var asiento = await _asientoService.ObtenerParaEdicionAsync(id);
 
-            if (asiento == null)
-                return RedirectToPage("Index");
+            if (asiento == null) return NotFound();
 
-            if (asiento.IdEstadoAsiento != (int)EstadoAsiento.Borrador &&
-                asiento.IdEstadoAsiento != (int)EstadoAsiento.PendienteAprobar)
+            if (asiento.IdEstadoAsiento > 2)
             {
-                TempData["Mensaje"] = "No se puede editar este asiento.";
-                return RedirectToPage("Index");
+                TempData["Error"] = "Solo se pueden editar asientos en estado Borrador o Pendiente.";
+                return RedirectToPage("./Index");
             }
 
             Encabezado = asiento;
             Detalles = asiento.Detalles ?? new List<AsientoDetalleEntity>();
 
-            Cuentas = _cuentaService.ObtenerCuentasMovimiento().ToList();
+            var cuentas = await _asientoService.ObtenerCuentasParaComboAsync();
+            CuentasLista = new SelectList(cuentas, "IdCuenta", "NombreCuenta");
 
             return Page();
         }
 
+        public SelectList CuentasLista { get; set; }
+
         public async Task<IActionResult> OnPostAsync()
         {
-            var detalles = JsonSerializer.Deserialize<List<AsientoDetalleEntity>>(DetallesJson) ?? [];
+            if (!ModelState.IsValid) return Page();
 
-            if (!detalles.Any())
-                throw new Exception("El asiento debe tener al menos una línea.");
+            try
+            {
+                int idUsuarioSimulado = 1;
 
-            if (detalles.Any(d => d.IdCuentaContable == 0))
-                throw new Exception("Existen líneas sin cuenta contable.");
+                await _asientoService.EditarAsync(Encabezado, Detalles, idUsuarioSimulado);
 
-            if (detalles.Any(d => d.Monto <= 0))
-                throw new Exception("Existen montos inválidos.");
-
-            int idUsuario = int.Parse(
-                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
-            );
-
-            await _service.EditarAsync(Encabezado, detalles, idUsuario);
-
-            TempData["Mensaje"] = "Asiento actualizado correctamente.";
-            return RedirectToPage("Index");
+                TempData["Success"] = "Asiento actualizado correctamente.";
+                return RedirectToPage("./Index");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, "Error al guardar: " + ex.Message);
+                return Page();
+            }
         }
-
     }
 }
