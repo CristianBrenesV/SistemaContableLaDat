@@ -352,8 +352,7 @@ CREATE TABLE `usuarios` (
 
 LOCK TABLES `usuarios` WRITE;
 /*!40000 ALTER TABLE `usuarios` DISABLE KEYS */;
-INSERT INTO `usuarios` VALUES (1,'admin',0x639583BCEAD5D722B1,'Admin','Sistema','admin@correo.com',0x9FFBCEEBCBB1879679EE6707EC473EFF,0xD313E86DDB3593A97A9C41CE,'Activo',0,NULL),(4,'administrador',_binary 'admin123','Admin','Admin','administrador@gmail.com','','','Activo',1,'2026-01-30 18:31:38');
-/*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
+INSERT INTO `usuarios` VALUES (1,'admin',0x639583BCEAD5D722B1,'Admin','Admin','admin@correo.com', 0x9FFBCEEBCBB1879679EE6707EC473EFF, 0xD313E86DDB3593A97A9C41CE,'Activo',0,'2026-01-28 16:12:13');/*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
