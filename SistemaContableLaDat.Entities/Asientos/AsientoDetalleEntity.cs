@@ -8,5 +8,6 @@
         public string TipoMovimiento { get; set; } = string.Empty; // "D" | "C"
         public decimal Monto { get; set; }
         public string? Descripcion { get; set; }
+
     }
 }

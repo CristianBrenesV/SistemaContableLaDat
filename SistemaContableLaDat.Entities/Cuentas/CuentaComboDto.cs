@@ -11,5 +11,7 @@ namespace SistemaContableLaDat.Entities.Cuentas
         public int IdCuenta { get; set; }
         public string CodigoCuenta { get; set; } = "";
         public string Nombre { get; set; } = "";
+
+        public string Descripcion { get; set; }
     }
 }

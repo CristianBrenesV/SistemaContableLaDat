@@ -2,6 +2,7 @@
 using SistemaContableLaDat.Repository.Asientos;
 using SistemaContableLaDat.Service.Abstract;
 using System.Transactions;
+using SistemaContableLaDat.Entities.Cuentas;
 
 namespace SistemaContableLaDat.Service.Asientos
 {
@@ -144,24 +145,30 @@ namespace SistemaContableLaDat.Service.Asientos
             return encabezado;
         }
 
+        public async Task<IEnumerable<CuentaComboDto>> ObtenerCuentasParaComboAsync()
+        {
+            return await _repo.ListarCuentasParaComboAsync();
+        }
+
         public async Task AnularAsync(int idAsiento, int idUsuario)
         {
             var asiento = _repo.ObtenerPorId(idAsiento)
-                ?? throw new Exception("Asiento no existe.");
+                ?? throw new Exception("El asiento no existe.");
 
-            if (asiento.IdEstadoAsiento != (int)EstadoAsiento.Borrador &&
-                asiento.IdEstadoAsiento != (int)EstadoAsiento.PendienteAprobar)
-                throw new Exception("Estado no anulable.");
-
-            if (_repo.TieneRelaciones(idAsiento))
-                throw new Exception("No se puede eliminar un registro con datos relacionados.");
+            if (asiento.IdEstadoAsiento == 5)
+                throw new Exception("El asiento ya se encuentra anulado.");
 
             _repo.Anular(idAsiento);
 
             await _bitacora.RegistrarAccionAsync(
                 idUsuario.ToString(),
                 "Anulación de asiento",
-                new { idAsiento }
+                new
+                {
+                    IdAsiento = idAsiento,
+                    Codigo = asiento.Codigo,
+                    Motivo = "Anulación manual desde interfaz de usuario"
+                }
             );
         }
     }
