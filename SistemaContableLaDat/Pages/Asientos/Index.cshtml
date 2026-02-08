@@ -7,106 +7,164 @@
     Layout = "_PrincipalLayout";
 }
 
-<h1 class="mt-4">Administración de Asientos Contables</h1>
-<p>
-    <a class="btn btn-dark" asp-page="Crear">
-        <i class="bi bi-plus-circle"></i> Nuevo
-    </a>
-</p>
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Administración de Asientos Contables</h1>
 
-
-<table class="table table-hover align-middle">
-    <thead class="table-dark">
-        <tr>
-            <th>#</th>
-            <th>Fecha</th>
-            <th>Código</th>
-            <th>Referencia</th>
-            <th>Estado</th>
-            <th>Balance</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var a in Model.Asientos)
-        {
-            var estadoClass = a.IdEstadoAsiento switch
-            {
-                (int)EstadoAsiento.Borrador => "table-warning",
-                (int)EstadoAsiento.PendienteAprobar => "table-info",
-                (int)EstadoAsiento.Aprobado => "table-success",
-                _ => ""
-            };
-
-            <tr class="@estadoClass">
-                <td>@a.Consecutivo</td>
-                <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
-                <td>@a.Codigo</td>
-                <td>@a.Referencia</td>
-                <td>
-                    <span class="badge bg-secondary">@a.EstadoNombre</span>
-                </td>
-                <td>
-                    @if (a.EstaBalanceado)
-                    {
-                        <span class="badge bg-success">Balanceado</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-danger">No balanceado</span>
-                    }
-                </td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#det-@a.IdAsiento"
-                            onclick="cargarDetalle(@a.IdAsiento)">
-                        Detalle
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body bg-light rounded">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Periodo Contable</label>
+                    <select asp-for="PeriodoId" class="form-select"
+                            asp-items="@(new SelectList(Model.ListaPeriodos, "IdPeriodo", "Descripcion"))">
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Estado</label>
+                    <select asp-for="EstadoId" class="form-select">
+                        <option value="">-- Todos los estados --</option>
+                        <option value="@((int)EstadoAsiento.Borrador)">Borrador</option>
+                        <option value="@((int)EstadoAsiento.PendienteAprobar)">Pendiente de Aprobar</option>
+                        <option value="@((int)EstadoAsiento.Aprobado)">Aprobado</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-filter"></i> Filtrar
                     </button>
+                    <a asp-page="./Index" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
+                <div class="col-md-3 text-end">
+                    <a class="btn btn-dark" asp-page="Crear">
+                        <i class="bi bi-plus-circle"></i> Nuevo Asiento
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                    @if (a.PuedeEditar)
+    <div class="table-responsive">
+        <table class="table table-hover align-middle border">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Fecha</th>
+                    <th>Código</th>
+                    <th>Referencia</th>
+                    <th>Estado</th>
+                    <th>Balance</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model.Asientos)
+                {
+                    var rowClass = a.IdEstadoAsiento switch
                     {
-                        <a asp-page="Editar"
-                           asp-route-id="@a.IdAsiento"
-                           class="btn btn-sm btn-outline-secondary">
-                            Editar
-                        </a>
+                        (int)EstadoAsiento.Borrador => "border-start border-warning border-4",
+                        (int)EstadoAsiento.Aprobado => "border-start border-success border-4",
+                        _ => ""
+                    };
 
-                        <a asp-page="Anular"
-                           asp-route-id="@a.IdAsiento"
-                           class="btn btn-sm btn-outline-danger">
-                            Anular
-                        </a>
-                    }
-                </td>
-            </tr>
+                    <tr class="@rowClass">
+                        <td class="fw-bold">@a.Consecutivo</td>
+                        <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
+                        <td><code class="text-dark">@a.Codigo</code></td>
+                        <td>@a.Referencia</td>
+                        <td>
+                            @{
+                                var badgeClass = a.IdEstadoAsiento switch
+                                {
+                                    (int)EstadoAsiento.Borrador => "bg-warning text-dark",
+                                    (int)EstadoAsiento.PendienteAprobar => "bg-info text-dark",
+                                    (int)EstadoAsiento.Aprobado => "bg-success",
+                                    _ => "bg-secondary"
+                                };
+                            }
+                            <span class="badge @badgeClass">@a.EstadoNombre</span>
+                        </td>
+                        <td>
+                            @if (a.EstaBalanceado)
+                            {
+                                <span class="text-success"><i class="bi bi-check-circle-fill"></i> Ok</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Error</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#det-@a.IdAsiento"
+                                        onclick="cargarDetalle(@a.IdAsiento)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
 
-            <tr class="collapse bg-light" id="det-@a.IdAsiento">
-                <td colspan="7">
-                    <table class="table table-sm mb-0">
-                        <thead>
-                            <tr>
-                                <th style="width: 25%">Cuenta</th>
-                                <th style="width: 10%" class="text-center">Tipo</th>
-                                <th style="width: 20%" class="text-end pe-4">Monto</th>
-                                <th style="width: 45%">Descripción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detalle-@a.IdAsiento">
-                        </tbody>
-                        <tfoot id="footer-@a.IdAsiento" class="table-secondary d-none">
-                            <tr class="fw-bold">
-                                <td colspan="2" class="text-end">TOTALES:</td>
-                                <td class="text-end pe-4" id="sumas-@a.IdAsiento"></td>
-                                <td id="balance-@a.IdAsiento" class="text-start"></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+                                @if (a.PuedeEditar)
+                                {
+                                    <a asp-page="Editar" asp-route-id="@a.IdAsiento"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+
+                                    <form method="post" asp-page-handler="Anular" asp-route-id="@a.IdAsiento"
+                                          onsubmit="return confirm('¿Está seguro de anular este asiento?')"
+                                          style="display:inline;">
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="collapse bg-white" id="det-@a.IdAsiento">
+                        <td colspan="7" class="p-3">
+                            <div class="card card-body border-info shadow-sm">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr class="text-muted">
+                                            <th style="width: 30%">Cuenta</th>
+                                            <th style="width: 10%" class="text-center">Tipo</th>
+                                            <th style="width: 20%" class="text-end pe-4">Monto</th>
+                                            <th style="width: 40%">Descripción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detalle-@a.IdAsiento">
+                                        <tr><td colspan="4" class="text-center"><div class="spinner-border spinner-border-sm"></div> Cargando...</td></tr>
+                                    </tbody>
+                                    <tfoot id="footer-@a.IdAsiento" class="table-light d-none">
+                                        <tr class="fw-bold">
+                                            <td colspan="2" class="text-end">TOTALES:</td>
+                                            <td class="text-end pe-4" id="sumas-@a.IdAsiento"></td>
+                                            <td id="balance-@a.IdAsiento"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <nav>
+        <ul class="pagination justify-content-center">
+            @for (int i = 1; i <= Model.TotalPaginas; i++)
+            {
+                <li class="page-item @(i == Model.PaginaActual ? "active" : "")">
+                    <a class="page-link" asp-route-page="@i"
+                       asp-route-PeriodoId="@Model.PeriodoId"
+                       asp-route-EstadoId="@Model.EstadoId">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+</div>
 
 <script>
     function cargarDetalle(id) {

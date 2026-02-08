@@ -15,12 +15,17 @@ namespace SistemaContableLaDat.Repository.Asientos
             _connectionFactory = connectionFactory;
         }
 
-        public IEnumerable<AsientoListadoDto> ListarPorPeriodo(int idPeriodo)
+        public async Task<IEnumerable<AsientoListadoDto>> ListarPorPeriodoAsync(int idPeriodo, int? idEstado = null)
         {
             using var cn = _connectionFactory.CreateConnection();
-            return cn.Query<AsientoListadoDto>(
+
+            return await cn.QueryAsync<AsientoListadoDto>(
                 "sp_asientos_listar_por_periodo",
-                new { p_id_periodo = idPeriodo },
+                new
+                {
+                    p_id_periodo = idPeriodo,
+                    p_id_estado = idEstado
+                },
                 commandType: CommandType.StoredProcedure
             );
         }
@@ -72,7 +77,7 @@ namespace SistemaContableLaDat.Repository.Asientos
 
         public void InsertarDetalle(AsientoDetalleEntity d)
         {
-            using var cn = _connectionFactory.CreateConnection(); // 🔴 AQUÍ
+            using var cn = _connectionFactory.CreateConnection();
 
             cn.Execute(
                 "sp_asiento_insertar_detalle",
