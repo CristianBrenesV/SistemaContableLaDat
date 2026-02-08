@@ -132,16 +132,16 @@
             const badge = document.getElementById('badgeEstado');
             const btnGuardar = document.getElementById('btnGuardar');
 
+            btnGuardar.disabled = false;
+
             if (diff < 0.01 && (debe + haber) > 0) {
                 msgBalance.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Balanceado</span>';
                 badge.className = "badge bg-success";
-                badge.innerText = "Listo para Guardar";
-                btnGuardar.disabled = false;
+                badge.innerText = "Listo para Aprobar";
             } else {
                 msgBalance.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Desbalanceado (${diff.toFixed(2)})</span>`;
                 badge.className = "badge bg-warning text-dark";
-                badge.innerText = "Borrador / Descuadrado";
-                btnGuardar.disabled = true; 
+                badge.innerText = "Borrador (Incompleto)";
             }
         }
 
