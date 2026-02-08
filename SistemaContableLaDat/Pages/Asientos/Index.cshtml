@@ -10,7 +10,6 @@
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
         <h1>Administración de Asientos Contables</h1>
-        @* REQUERIMIENTO: Botón Nuevo Asiento arriba *@
         <a class="btn btn-dark" asp-page="Crear">
             <i class="bi bi-plus-circle"></i> Nuevo Asiento
         </a>
@@ -103,8 +102,7 @@
 
                                 @if (a.PuedeEditar)
                                 {
-                                    <a asp-page="Editar" asp-route-id="@a.IdAsiento"
-                                       class="btn btn-sm btn-outline-secondary">
+                                    <a asp-page="Editar" asp-route-id="@a.IdAsiento" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-pencil-square"></i> Editar
                                     </a>
 
@@ -144,7 +142,6 @@
         </table>
     </div>
 
-    @* Paginación con estilo pagination-dark *@
     <nav aria-label="Paginación" class="mt-4">
         <ul class="pagination justify-content-center">
             @for (int i = 1; i <= Model.TotalPaginas; i++)
@@ -159,3 +156,50 @@
         </ul>
     </nav>
 </div>
+
+@section Scripts {
+    <script>
+        async function cargarDetalle(idAsiento) {
+            const contenedor = document.getElementById(`detalle-${idAsiento}`);
+
+            // Evitar recargar si ya tiene datos
+            if (contenedor.innerHTML.trim() !== "" && !contenedor.innerHTML.includes("Cargando...")) {
+                return;
+            }
+
+            try {
+                // Llamada al handler OnGetDetalleAsync definido en el PageModel
+                const response = await fetch(`?handler=Detalle&idAsiento=${idAsiento}`);
+                const data = await response.json();
+
+                // IMPORTANTE: Ajustamos 'data.lineas' según la estructura de tu DTO
+                // Si tu servicio devuelve directamente la lista, usa 'data.forEach'
+                const lineas = data.lineas || data;
+
+                if (Array.isArray(lineas) && lineas.length > 0) {
+                    let html = "";
+                    lineas.forEach(linea => {
+                        const badgeColor = (linea.tipoMovimiento === 'Debe' || linea.tipo === 'Debe') ? 'bg-primary' : 'bg-info text-dark';
+                        const montoFormateado = new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' }).format(linea.monto);
+
+                        html += `
+                            <tr>
+                                <td>${linea.nombreCuenta || linea.cuenta}</td>
+                                <td class="text-center">
+                                    <span class="badge ${badgeColor}">${linea.tipoMovimiento || linea.tipo}</span>
+                                </td>
+                                <td class="text-end">${montoFormateado}</td>
+                                <td>${linea.glosa || linea.descripcion || ''}</td>
+                            </tr>`;
+                    });
+                    contenedor.innerHTML = html;
+                } else {
+                    contenedor.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay movimientos registrados.</td></tr>';
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                contenedor.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al conectar con el servidor.</td></tr>';
+            }
+        }
+    </script>
+}
