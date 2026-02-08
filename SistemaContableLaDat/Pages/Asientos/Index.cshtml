@@ -7,120 +7,199 @@
     Layout = "_PrincipalLayout";
 }
 
-<h1 class="mt-4">Administración de Asientos Contables</h1>
-<p>
-    <a class="btn btn-dark" asp-page="Crear">
-        <i class="bi bi-plus-circle"></i> Nuevo
-    </a>
-</p>
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+        <h1>Administración de Asientos Contables</h1>
+        <a class="btn btn-dark" asp-page="Crear">
+            <i class="bi bi-plus-circle"></i> Nuevo Asiento
+        </a>
+    </div>
 
-
-<table class="table table-hover align-middle">
-    <thead class="table-dark">
-        <tr>
-            <th>#</th>
-            <th>Fecha</th>
-            <th>Código</th>
-            <th>Referencia</th>
-            <th>Estado</th>
-            <th>Balance</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var a in Model.Asientos)
-        {
-            var estadoClass = a.IdEstadoAsiento switch
-            {
-                (int)EstadoAsiento.Borrador => "table-warning",
-                (int)EstadoAsiento.PendienteAprobar => "table-info",
-                (int)EstadoAsiento.Aprobado => "table-success",
-                _ => ""
-            };
-
-            <tr class="@estadoClass">
-                <td>@a.Consecutivo</td>
-                <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
-                <td>@a.Codigo</td>
-                <td>@a.Referencia</td>
-                <td>
-                    <span class="badge bg-secondary">@a.EstadoNombre</span>
-                </td>
-                <td>
-                    @if (a.EstaBalanceado)
-                    {
-                        <span class="badge bg-success">Balanceado</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-danger">No balanceado</span>
-                    }
-                </td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#det-@a.IdAsiento"
-                            onclick="cargarDetalle(@a.IdAsiento)">
-                        Detalle
+    <div class="card mb-4 border-1 shadow-none">
+        <div class="card-body bg-white rounded border">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Periodo Contable</label>
+                    <select asp-for="PeriodoId" class="form-select form-select-sm"
+                            asp-items="@(new SelectList(Model.ListaPeriodos, "IdPeriodo", "Descripcion"))">
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Estado</label>
+                    <select asp-for="EstadoId" class="form-select form-select-sm">
+                        <option value="">-- Todos los estados --</option>
+                        <option value="@((int)EstadoAsiento.Borrador)">Borrador</option>
+                        <option value="@((int)EstadoAsiento.PendienteAprobar)">Pendiente de Aprobar</option>
+                        <option value="@((int)EstadoAsiento.Aprobado)">Aprobado</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-sm btn-dark">
+                        <i class="bi bi-filter"></i> Filtrar
                     </button>
+                    <a asp-page="./Index" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                    @if (a.PuedeEditar)
-                    {
-                        <a asp-page="Editar"
-                           asp-route-id="@a.IdAsiento"
-                           class="btn btn-sm btn-outline-secondary">
-                            Editar
-                        </a>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Fecha</th>
+                    <th>Código</th>
+                    <th>Referencia</th>
+                    <th>Estado</th>
+                    <th>Balance</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model.Asientos)
+                {
+                    <tr>
+                        <td class="fw-bold">@a.Consecutivo</td>
+                        <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
+                        <td><code class="text-dark">@a.Codigo</code></td>
+                        <td>@a.Referencia</td>
+                        <td>
+                            @{
+                                var badgeClass = a.IdEstadoAsiento switch
+                                {
+                                    (int)EstadoAsiento.Borrador => "bg-secondary",
+                                    (int)EstadoAsiento.PendienteAprobar => "bg-info text-dark",
+                                    (int)EstadoAsiento.Aprobado => "bg-success",
+                                    _ => "bg-light text-dark border"
+                                };
+                                string nombreEstado = a.IdEstadoAsiento == (int)EstadoAsiento.PendienteAprobar ? "Pendiente de Aprobar" : a.EstadoNombre;
+                            }
+                            <span class="badge @badgeClass">@nombreEstado</span>
+                        </td>
+                        <td>
+                            @if (a.EstaBalanceado)
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success px-2">
+                                    <i class="bi bi-check-circle-fill"></i> Balanceado
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger-subtle text-danger border border-danger px-2">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> No Balanceado
+                                </span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#det-@a.IdAsiento"
+                                        onclick="cargarDetalle(@a.IdAsiento)">
+                                    <i class="bi bi-eye"></i> Detalles
+                                </button>
 
-                        <a asp-page="Anular"
-                           asp-route-id="@a.IdAsiento"
-                           class="btn btn-sm btn-outline-danger">
-                            Anular
-                        </a>
-                    }
-                </td>
-            </tr>
+                                @if (a.PuedeEditar)
+                                {
+                                    <a asp-page="Editar" asp-route-id="@a.IdAsiento" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-pencil-square"></i> Editar
+                                    </a>
 
-            <tr class="collapse bg-light" id="det-@a.IdAsiento">
-                <td colspan="7">
-                    <table class="table table-sm mb-0">
-                        <thead>
+                                    <form method="post" asp-page-handler="Anular" asp-route-id="@a.IdAsiento"
+                                          onsubmit="return confirm('¿Está seguro de anular este asiento?')"
+                                          style="display:inline;">
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-x-circle"></i> Anular
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr class="collapse bg-white" id="det-@a.IdAsiento">
+                        <td colspan="7" class="p-3">
+                            <div class="card card-body border-secondary shadow-none">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Cuenta</th>
+                                            <th class="text-center">Tipo</th>
+                                            <th class="text-end">Monto</th>
+                                            <th>Descripción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detalle-@a.IdAsiento">
+                                        <tr><td colspan="4" class="text-center">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <nav aria-label="Paginación" class="mt-4">
+        <ul class="pagination justify-content-center">
+            @for (int i = 1; i <= Model.TotalPaginas; i++)
+            {
+                <li class="page-item @(i == Model.PaginaActual ? "active" : "")">
+                    <a class="page-link @(i == Model.PaginaActual ? "bg-dark border-dark text-white" : "text-dark")"
+                       asp-route-page="@i"
+                       asp-route-PeriodoId="@Model.PeriodoId"
+                       asp-route-EstadoId="@Model.EstadoId">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+</div>
+
+@section Scripts {
+    <script>
+        async function cargarDetalle(idAsiento) {
+            const contenedor = document.getElementById(`detalle-${idAsiento}`);
+
+            // Evitar recargar si ya tiene datos
+            if (contenedor.innerHTML.trim() !== "" && !contenedor.innerHTML.includes("Cargando...")) {
+                return;
+            }
+
+            try {
+                // Llamada al handler OnGetDetalleAsync definido en el PageModel
+                const response = await fetch(`?handler=Detalle&idAsiento=${idAsiento}`);
+                const data = await response.json();
+
+                // IMPORTANTE: Ajustamos 'data.lineas' según la estructura de tu DTO
+                // Si tu servicio devuelve directamente la lista, usa 'data.forEach'
+                const lineas = data.lineas || data;
+
+                if (Array.isArray(lineas) && lineas.length > 0) {
+                    let html = "";
+                    lineas.forEach(linea => {
+                        const badgeColor = (linea.tipoMovimiento === 'Debe' || linea.tipo === 'Debe') ? 'bg-primary' : 'bg-info text-dark';
+                        const montoFormateado = new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' }).format(linea.monto);
+
+                        html += `
                             <tr>
-                                <th>Cuenta</th>
-                                <th>Tipo</th>
-                                <th>Monto</th>
-                                <th>Descripción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detalle-@a.IdAsiento">
-                            <tr>
-                                <td colspan="4" class="text-muted">
-                                    Cargando…
+                                <td>${linea.nombreCuenta || linea.cuenta}</td>
+                                <td class="text-center">
+                                    <span class="badge ${badgeColor}">${linea.tipoMovimiento || linea.tipo}</span>
                                 </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </td>
-            </tr>
+                                <td class="text-end">${montoFormateado}</td>
+                                <td>${linea.glosa || linea.descripcion || ''}</td>
+                            </tr>`;
+                    });
+                    contenedor.innerHTML = html;
+                } else {
+                    contenedor.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay movimientos registrados.</td></tr>';
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                contenedor.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al conectar con el servidor.</td></tr>';
+            }
         }
-    </tbody>
-</table>
-
-<script>
-    function cargarDetalle(id) {
-        fetch(`?handler=Detalle&idAsiento=${id}`)
-            .then(r => r.json())
-            .then(data => {
-                let html = "";
-                data.forEach(d => {
-                    html += `<tr>
-                        <td>${d.cuenta}</td>
-                        <td>${d.tipoMovimiento}</td>
-                        <td>${d.monto}</td>
-                        <td>${d.descripcion}</td>
-                    </tr>`;
-                });
-                document.getElementById(`detalle-${id}`).innerHTML = html;
-            });
-    }
-</script>
+    </script>
+}
