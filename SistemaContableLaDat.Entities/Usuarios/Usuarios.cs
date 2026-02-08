@@ -22,8 +22,8 @@ namespace SistemaContableLaDat.Entities.Usuarios
         public EstadoUsuario Estado { get; set; }       // estado
 
         // Columnas faltantes de la tabla
-        public int Intentos_Fallidos { get; set; }      // intentos_fallidos
-        public DateTime? Ultimo_Intento { get; set; }   // ultimo_intento
+        public int IntentosFallidos { get; set; }      // intentos_fallidos
+        public DateTime? UltimoIntento { get; set; }   // ultimo_intento
 
         // Campo adicional del SP (no pertenece a la tabla)
         public int Encontrado { get; set; }

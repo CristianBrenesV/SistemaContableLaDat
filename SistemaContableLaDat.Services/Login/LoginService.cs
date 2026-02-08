@@ -25,7 +25,7 @@ namespace SistemaContableLaDat.Service.Login
                 var usuarioDb = _loginRepository.VerificarUsuario(usuario);
 
                 if (usuarioDb == null || usuarioDb.Encontrado != 1)
-                    return new LoginResult { Exito = false, Mensaje = "Usuario no encontrado." };
+                    return new LoginResult { Exito = false, Mensaje = "Usuario y/o clave incorrectos." };
 
                 // 🔒 Si está bloqueado
                 if (usuarioDb.Estado == EstadoUsuario.Bloqueado)
@@ -49,7 +49,7 @@ namespace SistemaContableLaDat.Service.Login
                 else
                 {
                     _loginRepository.RegistrarIntentoFallido(usuario);
-                    return new LoginResult { Exito = false, Mensaje = "Usuario y/o clave incorrectos" };
+                    return new LoginResult { Exito = false, Mensaje = "Usuario y/o clave incorrectos." };
                 }
             }
             catch (Exception ex)
