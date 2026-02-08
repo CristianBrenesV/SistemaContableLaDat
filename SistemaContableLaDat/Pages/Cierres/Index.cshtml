@@ -1,0 +1,133 @@
+﻿@page
+@model SistemaContableLaDat.Web.Pages.Cierres.IndexModel
+@{
+    ViewData["Title"] = "Cierre Contable";
+    Layout = "_PrincipalLayout";
+}
+
+<h1 class="mt-4">Cierre Contable</h1>
+<p class="lead">Administración de cierres contables mensuales</p>
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Información del último cierre -->
+@if (Model.UltimoCierre.IdCierre > 0)
+{
+    <div class="card mb-4 border-success">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-check-circle"></i> Último Cierre Ejecutado</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Periodo:</strong><br>
+                    @Model.UltimoCierre.Mes/@Model.UltimoCierre.Anio
+                </div>
+                <div class="col-md-3">
+                    <strong>Fecha:</strong><br>
+                    @Model.UltimoCierre.FechaCierre.ToString("dd/MM/yyyy HH:mm")
+                </div>
+                <div class="col-md-3">
+                    <strong>Ejecutado por:</strong><br>
+                    @Model.UltimoCierre.NombreUsuario
+                </div>
+                <div class="col-md-3">
+                    <strong>Balance:</strong><br>
+                    <span class="badge bg-success">@Model.UltimoCierre.TotalDebe.ToString("C") = @Model.UltimoCierre.TotalHaber.ToString("C")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Tabla de periodos -->
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-calendar-month"></i> Periodos Contables</h5>
+    </div>
+    <div class="card-body">
+        @if (!Model.Periodos.Any())
+        {
+            <div class="alert alert-info">
+                No hay periodos contables configurados.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Periodo</th>
+                            <th>Año</th>
+                            <th>Mes</th>
+                            <th>Estado</th>
+                            <th>Fecha Cierre</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var periodo in Model.Periodos)
+                        {
+                            var estadoClass = periodo.Estado == "Cerrado" ? "table-success" : "table-warning";
+                            var estadoBadge = periodo.Estado == "Cerrado" ? "success" : "warning";
+
+                            <tr class="@estadoClass">
+                                <td>@periodo.IdPeriodo</td>
+                                <td>@periodo.Anio</td>
+                                <td>@periodo.NombreMes</td>
+                                <td>
+                                    <span class="badge bg-@estadoBadge">@periodo.Estado</span>
+                                </td>
+                                <td>
+                                    @if (periodo.FechaCierre.HasValue)
+                                    {
+                                        @periodo.FechaCierre.Value.ToString("dd/MM/yyyy HH:mm")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No cerrado</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (periodo.Estado == "Abierto")
+                                    {
+                                        <form method="post" asp-page-handler="Calcular" class="d-inline">
+                                            <input type="hidden" name="idPeriodo" value="@periodo.IdPeriodo" />
+                                            <button type="submit" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-calculator"></i> Calcular Cierre
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            <i class="bi bi-lock"></i> Cerrado
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+    <div class="card-footer text-muted">
+        <small>Nota: Solo se pueden cerrar periodos cuando todos los periodos anteriores estén cerrados.</small>
+    </div>
+</div>
