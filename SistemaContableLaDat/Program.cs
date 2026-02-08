@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using SistemaContableLaDat.Repository.Asientos;
 using SistemaContableLaDat.Repository.Bitacora;
+using SistemaContableLaDat.Repository.Cierres;
 using SistemaContableLaDat.Repository.Cuentas;
 using SistemaContableLaDat.Repository.Infrastructure;
 using SistemaContableLaDat.Repository.Login;
@@ -8,12 +9,22 @@ using SistemaContableLaDat.Repository.Usuarios;
 using SistemaContableLaDat.Service.Abstract;
 using SistemaContableLaDat.Service.Asientos;
 using SistemaContableLaDat.Service.Bitacora;
+using SistemaContableLaDat.Service.Cierres;
 using SistemaContableLaDat.Service.Cuentas;
 using SistemaContableLaDat.Service.Encriptado;
 using SistemaContableLaDat.Service.Login;
 using SistemaContableLaDat.Service.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configuración de sesión
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.Name = ".SistemaContable.Session";
+});
 
 // Razor Pages
 builder.Services.AddRazorPages();
@@ -38,6 +49,9 @@ builder.Services.AddScoped<ISeguridadService, SeguridadService>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<EncriptadoService>();
 builder.Services.AddScoped<AsientoService>();
+
+builder.Services.AddScoped<CierreRepository>();
+builder.Services.AddScoped<ICierreService, CierreService>();
 
 // Autenticación
 builder.Services.AddAuthentication("Cookies")
@@ -65,6 +79,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseSession();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();

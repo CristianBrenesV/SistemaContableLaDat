@@ -21,10 +21,10 @@ namespace SistemaContableLaDat.Service.Asientos
 
         public async Task<IEnumerable<AsientoListadoDto>> ListarPorPeriodoAsync(int idPeriodo, int idUsuario)
         {
-            await _bitacora.RegistrarAccionAsync(
+            await _bitacora.RegistrarConsultaAsync(
                 idUsuario.ToString(),
-                "Consulta de asientos",
-                new { idPeriodo }
+                "Asientos por Periodo",
+                new { IdPeriodo = idPeriodo }
             );
 
             return _repo.ListarPorPeriodo(idPeriodo);
@@ -70,10 +70,16 @@ namespace SistemaContableLaDat.Service.Asientos
                 _repo.InsertarDetalle(d);
             }
 
-            await _bitacora.RegistrarAccionAsync(
+            await _bitacora.RegistrarCreacionAsync(
                 idUsuario.ToString(),
-                "Creación de asiento",
-                new { encabezado, detalles }
+                "Asiento Contable",
+                new
+                {
+                    IdAsiento = idAsiento,
+                    Encabezado = encabezado,
+                    Detalles = detalles,
+                    FechaCreacion = DateTime.Now
+                }
             );
 
             scope.Complete();
@@ -123,10 +129,25 @@ namespace SistemaContableLaDat.Service.Asientos
                 _repo.InsertarDetalle(d);
             }
 
-            await _bitacora.RegistrarAccionAsync(
+            await _bitacora.RegistrarActualizacionAsync(
                 idUsuario.ToString(),
-                "Edición de asiento",
-                new { Antes = antes, Despues = new { encabezado, detalles } }
+                "Asiento Contable",
+                new
+                {
+                    Antes = new
+                    {
+                        Encabezado = actual,
+                        Detalles = _repo.ObtenerDetallesPorAsiento(encabezado.IdAsiento)
+                    }
+                },
+                new
+                {
+                    Despues = new
+                    {
+                        Encabezado = encabezado,
+                        Detalles = detalles
+                    }
+                }
             );
 
             scope.Complete();
@@ -160,16 +181,146 @@ namespace SistemaContableLaDat.Service.Asientos
 
             _repo.Anular(idAsiento);
 
-            await _bitacora.RegistrarAccionAsync(
+            await _bitacora.RegistrarEliminacionAsync(
                 idUsuario.ToString(),
-                "Anulación de asiento",
+                "Asiento Contable",
                 new
                 {
                     IdAsiento = idAsiento,
                     Codigo = asiento.Codigo,
-                    Motivo = "Anulación manual desde interfaz de usuario"
+                    Referencia = asiento.Referencia,
+                    Fecha = asiento.Fecha,
+                    Motivo = "Anulación manual desde interfaz de usuario",
+                    FechaAnulacion = DateTime.Now
                 }
             );
+        }
+
+        public async Task<(IEnumerable<AsientoListadoDto> Asientos, int Total)> ListarConFiltroAsync(
+    AsientoFiltroDto filtro, int idUsuario)
+        {
+            // Registrar en bitácora
+            await _bitacora.RegistrarAccionAsync(
+                idUsuario.ToString(),
+                "Consulta de asientos con filtro",
+                filtro
+            );
+
+            var asientos = await _repo.ListarConFiltroAsync(filtro);
+            var total = await _repo.ContarConFiltroAsync(filtro);
+
+            return (asientos, total);
+        }
+
+        public async Task<bool> CambiarEstadoAsync(int idAsiento, int idEstadoNuevo, int idUsuario)
+        {
+            var asiento = await _repo.ObtenerConEstadoAsync(idAsiento);
+            if (asiento == null)
+                throw new Exception("Asiento no encontrado");
+
+            // Validar reglas de negocio según la historia de usuario
+            var puedeCambiar = ValidarCambioEstado(asiento.IdEstadoAsiento, idEstadoNuevo);
+            if (!puedeCambiar)
+                throw new Exception("Cambio de estado no permitido");
+
+            // Registrar en bitácora antes del cambio
+            await _bitacora.RegistrarAccionAsync(
+                idUsuario.ToString(),
+                "Intento de cambio de estado de asiento",
+                new
+                {
+                    AsientoId = idAsiento,
+                    EstadoActual = asiento.IdEstadoAsiento,
+                    EstadoNuevo = idEstadoNuevo,
+                    Codigo = asiento.Codigo
+                }
+            );
+
+            var resultado = await _repo.CambiarEstadoAsync(idAsiento, idEstadoNuevo, idUsuario);
+
+            if (resultado)
+            {
+                // Registrar confirmación
+                await _bitacora.RegistrarAccionAsync(
+                    idUsuario.ToString(),
+                    "Cambio de estado de asiento exitoso",
+                    new
+                    {
+                        AsientoId = idAsiento,
+                        EstadoActual = asiento.IdEstadoAsiento,
+                        EstadoNuevo = idEstadoNuevo
+                    }
+                );
+            }
+
+            return resultado;
+        }
+
+        private bool ValidarCambioEstado(int estadoActual, int estadoNuevo)
+        {
+            // Reglas según historia de usuario
+            if (estadoActual == (int)EstadoAsiento.Anulado)
+                return false; // Anulado no permite ninguna acción
+
+            if (estadoActual == (int)EstadoAsiento.Borrador)
+                return false; // Borrador no permite ninguna acción
+
+            if (estadoActual == (int)EstadoAsiento.PendienteAprobar)
+            {
+                // Puede ir a: Anulado, Aprobado, Rechazado
+                return estadoNuevo == (int)EstadoAsiento.Anulado ||
+                       estadoNuevo == (int)EstadoAsiento.Aprobado ||
+                       estadoNuevo == (int)EstadoAsiento.Rechazado;
+            }
+
+            if (estadoActual == (int)EstadoAsiento.Aprobado)
+            {
+                // Puede ir a: PendienteAprobar (reversar), Anulado
+                return estadoNuevo == (int)EstadoAsiento.PendienteAprobar ||
+                       estadoNuevo == (int)EstadoAsiento.Anulado;
+            }
+
+            if (estadoActual == (int)EstadoAsiento.Rechazado)
+            {
+                // Solo puede reversar a PendienteAprobar
+                return estadoNuevo == (int)EstadoAsiento.PendienteAprobar;
+            }
+
+            return false;
+        }
+
+        public async Task<Dictionary<string, string>> ObtenerEstadosPermitidosAsync(int idAsiento)
+        {
+            var asiento = await _repo.ObtenerConEstadoAsync(idAsiento);
+            if (asiento == null)
+                return new Dictionary<string, string>();
+
+            var estadosPermitidos = new Dictionary<string, string>();
+
+            switch (asiento.IdEstadoAsiento)
+            {
+                case (int)EstadoAsiento.PendienteAprobar:
+                    estadosPermitidos.Add("Aprobar", ((int)EstadoAsiento.Aprobado).ToString());
+                    estadosPermitidos.Add("Rechazar", ((int)EstadoAsiento.Rechazado).ToString());
+                    estadosPermitidos.Add("Anular", ((int)EstadoAsiento.Anulado).ToString());
+                    break;
+
+                case (int)EstadoAsiento.Aprobado:
+                    estadosPermitidos.Add("Reversar Aprobación", ((int)EstadoAsiento.PendienteAprobar).ToString());
+                    estadosPermitidos.Add("Anular", ((int)EstadoAsiento.Anulado).ToString());
+                    break;
+
+                case (int)EstadoAsiento.Rechazado:
+                    estadosPermitidos.Add("Reversar Rechazo", ((int)EstadoAsiento.PendienteAprobar).ToString());
+                    break;
+
+                case (int)EstadoAsiento.Borrador:
+                case (int)EstadoAsiento.Anulado:
+                    // No hay acciones permitidas
+                    break;
+            }
+
+            return estadosPermitidos;
         }
     }
 }

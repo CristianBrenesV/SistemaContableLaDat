@@ -166,5 +166,93 @@ namespace SistemaContableLaDat.Repository.Asientos
             return await cn.QueryAsync<CuentaComboDto>(sql);
         }
 
+        public async Task<IEnumerable<AsientoListadoDto>> ListarConFiltroAsync(AsientoFiltroDto filtro)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            var parameters = new
+            {
+                p_id_periodo = filtro.IdPeriodo,
+                p_id_estado = filtro.IdEstado,
+                p_offset = (filtro.Pagina - 1) * filtro.ItemsPorPagina,
+                p_limit = filtro.ItemsPorPagina
+            };
+
+            return await cn.QueryAsync<AsientoListadoDto>(
+                "sp_asientos_listar_filtro",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<int> ContarConFiltroAsync(AsientoFiltroDto filtro)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            var parameters = new
+            {
+                p_id_periodo = filtro.IdPeriodo,
+                p_id_estado = filtro.IdEstado
+            };
+
+            return await cn.ExecuteScalarAsync<int>(
+                "sp_asientos_contar_filtro",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<bool> CambiarEstadoAsync(int idAsiento, int idEstadoNuevo, int idUsuario)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            var parameters = new
+            {
+                p_id_asiento = idAsiento,
+                p_id_estado_nuevo = idEstadoNuevo,
+                p_id_usuario = idUsuario
+            };
+
+            var affectedRows = await cn.ExecuteAsync(
+                "sp_asiento_cambiar_estado",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return affectedRows > 0;
+        }
+
+        public async Task<AsientoEncabezadoEntity?> ObtenerConEstadoAsync(int idAsiento)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            var asiento = await cn.QueryFirstOrDefaultAsync<AsientoEncabezadoEntity>(
+                @"SELECT a.*, e.Nombre as NombreEstado 
+          FROM asientocontableencabezado a
+          INNER JOIN estadoasientocontable e ON a.IdEstadoAsiento = e.IdEstadoAsiento
+          WHERE a.IdAsiento = @id",
+                new { id = idAsiento }
+            );
+
+            if (asiento != null)
+            {
+                asiento.Detalles = (await ObtenerDetallesPorAsientoAsync(idAsiento)).ToList();
+            }
+
+            return asiento;
+        }
+
+        private async Task<IEnumerable<AsientoDetalleEntity>> ObtenerDetallesPorAsientoAsync(int idAsiento)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            return await cn.QueryAsync<AsientoDetalleEntity>(
+                @"SELECT * FROM asientocontabledetalle 
+          WHERE IdAsiento = @id 
+          ORDER BY IdAsientoDetalle",
+                new { id = idAsiento }
+            );
+        }
+
     }
 }
