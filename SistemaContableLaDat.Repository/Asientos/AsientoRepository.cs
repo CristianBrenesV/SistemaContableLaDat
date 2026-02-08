@@ -15,7 +15,8 @@ namespace SistemaContableLaDat.Repository.Asientos
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<IEnumerable<AsientoListadoDto>> ListarPorPeriodoAsync(int idPeriodo, int? idEstado = null)
+        public async Task<IEnumerable<AsientoListadoDto>> ListarPorPeriodoAsync(
+            int idPeriodo, int? idEstado = null)
         {
             using var cn = _connectionFactory.CreateConnection();
 
@@ -29,6 +30,7 @@ namespace SistemaContableLaDat.Repository.Asientos
                 commandType: CommandType.StoredProcedure
             );
         }
+
 
         public async Task<IEnumerable<AsientoDetalleDto>> ListarDetalleAsync(int idAsiento)
         {
