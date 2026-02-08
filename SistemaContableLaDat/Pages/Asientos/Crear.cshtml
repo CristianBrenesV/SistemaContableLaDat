@@ -1,0 +1,164 @@
+﻿@page
+@model SistemaContableLaDat.Web.Pages.Asientos.CrearModel
+@{
+    ViewData["Title"] = "Administración de asientos";
+    Layout = "_PrincipalLayout";
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-journal-plus"></i> Nuevo Asiento Contable</h2>
+    <hr />
+
+    <form method="post" id="asientoForm">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <!-- ENCABEZADO -->
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Código</label>
+                <input asp-for="Encabezado.Codigo" class="form-control" required />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Fecha del asiento</label>
+                <input asp-for="Encabezado.Fecha" type="date" class="form-control" required />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Referencia</label>
+                <input asp-for="Encabezado.Referencia" class="form-control" required />
+            </div>
+        </div>
+
+        <!-- DETALLE -->
+        <h4 class="mt-4">Detalle del Asiento</h4>
+
+        <table class="table table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Cuenta</th>
+                    <th style="width:120px">Tipo</th>
+                    <th style="width:150px">Monto</th>
+                    <th>Descripción</th>
+                    <th style="width:50px"></th>
+                </tr>
+            </thead>
+            <tbody id="tablaDetalles"></tbody>
+            <tfoot>
+                <tr class="table-secondary fw-bold">
+                    <td colspan="2" class="text-end">Totales:</td>
+                    <td colspan="3">
+                        Débito: <span id="totalDebito">0.00</span> |
+                        Crédito: <span id="totalCredito">0.00</span>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div id="statusBadge" class="alert alert-warning text-center fw-bold">
+            ESTADO: BORRADOR
+        </div>
+
+        <div class="d-flex justify-content-between mt-3">
+            <button type="button" class="btn btn-primary" onclick="agregarFila()">Agregar línea</button>
+            <div>
+                <a asp-page="Index" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-success">Guardar</button>
+            </div>
+        </div>
+
+        <input type="hidden" asp-for="DetallesJson" id="inputDetallesJson" />
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const cuentas = @Html.Raw(Json.Serialize(Model.Cuentas));
+
+        function agregarFila() {
+            const tbody = document.getElementById("tablaDetalles");
+            const tr = document.createElement("tr");
+
+            let opciones = `<option value="">-- Seleccione --</option>`;
+            cuentas.forEach(c => {
+                opciones += `<option value="${c.idCuenta}">${c.codigoCuenta} - ${c.nombre}</option>`;
+            });
+
+            tr.innerHTML = `
+                <td>
+                    <select class="form-select select-cuenta" required>${opciones}</select>
+                </td>
+                <td>
+                    <select class="form-select select-tipo" onchange="calcularTotales()">
+                        <option value="D">Débito</option>
+                        <option value="C">Crédito</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="number" step="0.01" class="form-control input-monto"
+                           value="0" oninput="calcularTotales()" required />
+                </td>
+                <td>
+                    <input type="text" class="form-control input-desc" />
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-danger"
+                            onclick="eliminarFila(this)">✖</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function eliminarFila(btn) {
+            btn.closest("tr").remove();
+            calcularTotales();
+        }
+
+        function calcularTotales() {
+            let d = 0, c = 0;
+
+            document.querySelectorAll("#tablaDetalles tr").forEach(f => {
+                const tipo = f.querySelector(".select-tipo").value;
+                const monto = parseFloat(f.querySelector(".input-monto").value) || 0;
+                tipo === "D" ? d += monto : c += monto;
+            });
+
+            totalDebito.innerText = d.toFixed(2);
+            totalCredito.innerText = c.toFixed(2);
+
+            const badge = document.getElementById("statusBadge");
+            if (d === c && d > 0) {
+                badge.className = "alert alert-success text-center fw-bold";
+                badge.innerText = "BALANCEADO – Pendiente de Aprobar";
+            } else {
+                badge.className = "alert alert-warning text-center fw-bold";
+                badge.innerText = "NO BALANCEADO – Borrador";
+            }
+        }
+
+        document.getElementById("asientoForm").addEventListener("submit", e => {
+            const detalles = [];
+            document.querySelectorAll("#tablaDetalles tr").forEach(f => {
+                detalles.push({
+                    IdCuentaContable: parseInt(f.querySelector(".select-cuenta").value),
+                    TipoMovimiento: f.querySelector(".select-tipo").value,
+                    Monto: parseFloat(f.querySelector(".input-monto").value),
+                    Descripcion: f.querySelector(".input-desc").value
+                });
+            });
+
+            if (detalles.length === 0) {
+                alert("Debe ingresar al menos una línea.");
+                e.preventDefault();
+                return;
+            }
+
+            inputDetallesJson.value = JSON.stringify(detalles);
+        });
+
+        window.onload = () => {
+            agregarFila();
+            agregarFila();
+        };
+    </script>
+}

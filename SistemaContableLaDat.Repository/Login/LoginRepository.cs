@@ -23,7 +23,7 @@ namespace SistemaContableLaDat.Repository.Login
 
                 using var connection = _dbConnectionFactory.CreateConnection();
                 connection.Open();
-
+                Console.WriteLine(connection.Database);
                 var parameters = new DynamicParameters();
                 parameters.Add("@pI_usuario", nombreUsuario, DbType.String, ParameterDirection.Input);
 
