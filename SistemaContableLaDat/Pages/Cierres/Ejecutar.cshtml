@@ -1,0 +1,258 @@
+﻿@page "{idPeriodo:int}"
+@model SistemaContableLaDat.Web.Pages.Cierres.EjecutarModel
+@{
+    ViewData["Title"] = "Ejecutar Cierre Contable";
+    Layout = "_PrincipalLayout";
+}
+
+<h1 class="mt-4">Ejecutar Cierre Contable</h1>
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/Cierres/Index">Cierres</a></li>
+        <li class="breadcrumb-item active">@Model.Resultado.MesNombre @Model.Resultado.Anio</li>
+    </ol>
+</nav>
+
+<!-- Mensajes -->
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Resumen del cierre -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Resumen del Cierre</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title">Total Debe</h6>
+                        <h3 class="text-primary">@Model.Resultado.TotalDebe.ToString("C")</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title">Total Haber</h6>
+                        <h3 class="text-success">@Model.Resultado.TotalHaber.ToString("C")</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title">Diferencia</h6>
+                        <h3 class="@(Model.Resultado.Balanceado ? "text-success" : "text-danger")">
+                            @Model.Resultado.Diferencia.ToString("C")
+                        </h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title">Estado</h6>
+                        @if (Model.Resultado.Balanceado)
+                        {
+                            <h3><span class="badge bg-success">BALANCEADO</span></h3>
+                        }
+                        else
+                        {
+                            <h3><span class="badge bg-danger">DESBALANCEADO</span></h3>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Validaciones -->
+        <div class="mt-4">
+            <h6>Validaciones:</h6>
+            <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Periodo abierto
+                    @if (Model.Resultado.EstadoPeriodo == "Abierto")
+                    {
+                        <span class="badge bg-success rounded-pill"><i class="bi bi-check-circle"></i></span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger rounded-pill"><i class="bi bi-x-circle"></i></span>
+                    }
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Periodos anteriores cerrados
+                    @if (Model.Resultado.PuedeCerrar)
+                    {
+                        <span class="badge bg-success rounded-pill"><i class="bi bi-check-circle"></i></span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger rounded-pill"><i class="bi bi-x-circle"></i></span>
+                    }
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Balance igualitario (Debe = Haber)
+                    @if (Model.Resultado.Balanceado)
+                    {
+                        <span class="badge bg-success rounded-pill"><i class="bi bi-check-circle"></i></span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger rounded-pill"><i class="bi bi-x-circle"></i></span>
+                    }
+                </li>
+            </ul>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="mt-4">
+            <form method="post" asp-page-handler="EjecutarCierre">
+                <input type="hidden" name="IdPeriodo" value="@Model.IdPeriodo" />
+
+                @if (Model.Resultado.PuedeCerrar && Model.Resultado.Balanceado)
+                {
+                    <button type="submit" class="btn btn-success btn-lg"
+                            onclick="return confirm('¿Está seguro de ejecutar el cierre contable? Esta acción no se puede deshacer.')">
+                        <i class="bi bi-check-circle"></i> Ejecutar Cierre Contable
+                    </button>
+                }
+                else
+                {
+                    <button type="submit" class="btn btn-success btn-lg" disabled>
+                        <i class="bi bi-lock"></i> No se puede ejecutar cierre
+                    </button>
+                }
+
+                <a asp-page="Index" class="btn btn-secondary btn-lg">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </form>
+
+            @if (!Model.Resultado.PuedeCerrar || !Model.Resultado.Balanceado)
+            {
+                <div class="alert alert-warning mt-3">
+                    <strong>@Model.Resultado.MensajeValidacion</strong>
+                    @if (!Model.Resultado.Balanceado)
+                    {
+                        <p class="mb-0">Debe corregir los asientos del periodo para balancear los totales.</p>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Detalle de saldos por cuenta -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-list-columns"></i> Detalle de Saldos por Cuenta</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cuenta</th>
+                        <th>Nombre</th>
+                        <th>Saldo Anterior</th>
+                        <th>Débitos Mes</th>
+                        <th>Créditos Mes</th>
+                        <th>Saldo Actual</th>
+                        <th>Naturaleza</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        decimal totalSaldoAnterior = 0;
+                        decimal totalDebitos = 0;
+                        decimal totalCreditos = 0;
+                        decimal totalSaldoActual = 0;
+                    }
+
+                    @foreach (var saldo in Model.SaldosDetallados)
+                    {
+                        totalSaldoAnterior += saldo.SaldoAnterior;
+                        totalDebitos += saldo.DebitosMes;
+                        totalCreditos += saldo.CreditosMes;
+                        totalSaldoActual += saldo.SaldoActual;
+
+                        <tr>
+                            <td><code>@saldo.CodigoCuenta</code></td>
+                            <td>@saldo.NombreCuenta</td>
+                            <td class="text-end">@saldo.SaldoAnterior.ToString("C")</td>
+                            <td class="text-end">@saldo.DebitosMes.ToString("C")</td>
+                            <td class="text-end">@saldo.CreditosMes.ToString("C")</td>
+                            <td class="text-end fw-bold">@saldo.SaldoActual.ToString("C")</td>
+                            <td>
+                                <span class="badge @(saldo.Naturaleza == "Deudora" ? "bg-primary" : "bg-success")">
+                                    @saldo.Naturaleza
+                                </span>
+                            </td>
+                        </tr>
+                    }
+
+                    <!-- Totales -->
+                    <tr class="table-dark fw-bold">
+                        <td colspan="2">TOTALES</td>
+                        <td class="text-end">@totalSaldoAnterior.ToString("C")</td>
+                        <td class="text-end">@totalDebitos.ToString("C")</td>
+                        <td class="text-end">@totalCreditos.ToString("C")</td>
+                        <td class="text-end">@totalSaldoActual.ToString("C")</td>
+                        <td></td>
+                    </tr>
+
+                    <!-- Total por naturaleza -->
+                    @{
+                        var totalDeudoras = Model.SaldosDetallados
+                        .Where(s => s.Naturaleza == "Deudora")
+                        .Sum(s => s.SaldoActual);
+                        var totalAcreedoras = Model.SaldosDetallados
+                        .Where(s => s.Naturaleza == "Acreedora")
+                        .Sum(s => s.SaldoActual);
+                    }
+
+                    <tr class="table-info">
+                        <td colspan="5" class="text-end">TOTAL DEUDORAS:</td>
+                        <td class="text-end fw-bold">@totalDeudoras.ToString("C")</td>
+                        <td></td>
+                    </tr>
+                    <tr class="table-info">
+                        <td colspan="5" class="text-end">TOTAL ACREEDORAS:</td>
+                        <td class="text-end fw-bold">@totalAcreedoras.ToString("C")</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Notas importantes -->
+<div class="alert alert-warning mt-4">
+    <h5><i class="bi bi-exclamation-triangle"></i> Consideraciones importantes:</h5>
+    <ul class="mb-0">
+        <li>El cierre contable es un proceso irreversible.</li>
+        <li>Solo se pueden cerrar periodos cuando todos los periodos anteriores estén cerrados.</li>
+        <li>Después del cierre, no se podrán modificar los asientos del periodo cerrado.</li>
+        <li>Se recomienda realizar una copia de seguridad antes de ejecutar el cierre.</li>
+        <li>El proceso registrará todos los saldos finales de las cuentas para el periodo.</li>
+    </ul>
+</div>
