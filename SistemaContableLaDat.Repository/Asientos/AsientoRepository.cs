@@ -35,13 +35,13 @@ namespace SistemaContableLaDat.Repository.Asientos
             );
         }
 
-
         public AsientoEncabezadoEntity? ObtenerPorId(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
             return cn.QueryFirstOrDefault<AsientoEncabezadoEntity>(
-                "SELECT * FROM asientocontableencabezado WHERE IdAsiento = @id",
-                new { id = idAsiento }
+                "sp_asiento_obtener_por_id",  // CAMBIADO A SP
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
             );
         }
 
@@ -67,13 +67,9 @@ namespace SistemaContableLaDat.Repository.Asientos
             return p.Get<int>("p_id_asiento");
         }
 
-
-
-
         public void InsertarDetalle(AsientoDetalleEntity d)
         {
-            using var cn = _connectionFactory.CreateConnection(); // 🔴 AQUÍ
-
+            using var cn = _connectionFactory.CreateConnection();
             cn.Execute(
                 "sp_asiento_insertar_detalle",
                 new
@@ -88,60 +84,58 @@ namespace SistemaContableLaDat.Repository.Asientos
             );
         }
 
-
-
-
         public void ActualizarEncabezado(AsientoEncabezadoEntity a)
         {
             using var cn = _connectionFactory.CreateConnection();
             cn.Execute(
-                @"UPDATE asientocontableencabezado
-                  SET Fecha = @Fecha,
-                      Referencia = @Referencia,
-                      IdEstadoAsiento = @IdEstadoAsiento,
-                      Codigo = @Codigo,   
-                      Consecutivo = @Consecutivo 
-                  WHERE IdAsiento = @IdAsiento",
-                a
+                "sp_asiento_actualizar_encabezado",  // CAMBIADO A SP
+                new
+                {
+                    p_id_asiento = a.IdAsiento,
+                    p_fecha = a.Fecha,
+                    p_referencia = a.Referencia,
+                    p_id_estado_asiento = a.IdEstadoAsiento,
+                    p_codigo = a.Codigo,
+                    p_consecutivo = a.Consecutivo
+                },
+                commandType: CommandType.StoredProcedure
             );
         }
 
         public IEnumerable<AsientoDetalleEntity> ObtenerDetallesPorAsiento(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
-
             return cn.Query<AsientoDetalleEntity>(
-                @"SELECT 
-            IdAsientoDetalle,
-            IdAsiento AS IdAsiento,
-            IdCuentaContable,
-            TipoMovimiento,
-            Monto,
-            Descripcion
-          FROM asientocontabledetalle
-          WHERE IdAsiento = @id",
-                new { id = idAsiento }
+                "sp_asiento_obtener_detalles",  // CAMBIADO A SP
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
             );
         }
-
 
         public void EliminarDetalles(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
             cn.Execute(
-                "DELETE FROM asientocontabledetalle WHERE IdAsiento = @id",
-                new { id = idAsiento }
+                "sp_asiento_eliminar_detalles",  // CAMBIADO A SP
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
             );
         }
 
         public bool TieneRelaciones(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
-            int count = cn.ExecuteScalar<int>(
-                "SELECT COUNT(*) FROM asientocontabledetalle WHERE IdAsiento = @id",
-                new { id = idAsiento}
+            var parameters = new DynamicParameters();
+            parameters.Add("p_id_asiento", idAsiento);
+            parameters.Add("p_tiene_relaciones", dbType: DbType.Boolean, direction: ParameterDirection.Output);
+
+            cn.Execute(
+                "sp_asiento_tiene_relaciones",  // CAMBIADO A SP
+                parameters,
+                commandType: CommandType.StoredProcedure
             );
-            return count > 0;
+
+            return parameters.Get<bool>("p_tiene_relaciones");
         }
 
         public void Anular(int idAsiento)
@@ -153,19 +147,17 @@ namespace SistemaContableLaDat.Repository.Asientos
                 commandType: CommandType.StoredProcedure
             );
         }
+
         public async Task<IEnumerable<CuentaComboDto>> ListarCuentasParaComboAsync()
         {
             using var cn = _connectionFactory.CreateConnection();
-
-            string sql = @"SELECT IdCuenta AS IdCuentaContable, 
-                          Nombre AS Descripcion 
-                   FROM cuentascontables
-                   WHERE Estado = 'Activa' 
-                   ORDER BY CodigoCuenta";
-
-            return await cn.QueryAsync<CuentaComboDto>(sql);
+            return await cn.QueryAsync<CuentaComboDto>(
+                "sp_cuentas_listar_para_combo",  // CAMBIADO A SP
+                commandType: CommandType.StoredProcedure
+            );
         }
 
+        // NUEVOS MÉTODOS PARA APROBACIÓN (ya en SP)
         public async Task<IEnumerable<AsientoListadoDto>> ListarConFiltroAsync(AsientoFiltroDto filtro)
         {
             using var cn = _connectionFactory.CreateConnection();
@@ -227,15 +219,14 @@ namespace SistemaContableLaDat.Repository.Asientos
             using var cn = _connectionFactory.CreateConnection();
 
             var asiento = await cn.QueryFirstOrDefaultAsync<AsientoEncabezadoEntity>(
-                @"SELECT a.*, e.Nombre as NombreEstado 
-          FROM asientocontableencabezado a
-          INNER JOIN estadoasientocontable e ON a.IdEstadoAsiento = e.IdEstadoAsiento
-          WHERE a.IdAsiento = @id",
-                new { id = idAsiento }
+                "sp_asiento_obtener_por_id",
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
             );
 
             if (asiento != null)
             {
+                // Obtener detalles también por SP
                 asiento.Detalles = (await ObtenerDetallesPorAsientoAsync(idAsiento)).ToList();
             }
 
@@ -245,14 +236,11 @@ namespace SistemaContableLaDat.Repository.Asientos
         private async Task<IEnumerable<AsientoDetalleEntity>> ObtenerDetallesPorAsientoAsync(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
-
             return await cn.QueryAsync<AsientoDetalleEntity>(
-                @"SELECT * FROM asientocontabledetalle 
-          WHERE IdAsiento = @id 
-          ORDER BY IdAsientoDetalle",
-                new { id = idAsiento }
+                "sp_asiento_obtener_detalles",
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
             );
         }
-
     }
 }
