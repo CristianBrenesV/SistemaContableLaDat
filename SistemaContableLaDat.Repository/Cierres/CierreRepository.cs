@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Dapper;
+﻿using Dapper;
 using SistemaContableLaDat.Entities.Cierres;
 using SistemaContableLaDat.Repository.Infrastructure;
 using System.Data;
@@ -19,31 +14,24 @@ namespace SistemaContableLaDat.Repository.Cierres
             _connectionFactory = connectionFactory;
         }
 
+        // ========== MÉTODOS PÚBLICOS ==========
+
         public async Task<IEnumerable<PeriodoContableEntity>> ListarPeriodosAsync()
         {
             using var cn = _connectionFactory.CreateConnection();
-
             return await cn.QueryAsync<PeriodoContableEntity>(
-                @"SELECT 
-                    IdPeriodo,
-                    Anio,
-                    Mes,
-                    Estado,
-                    IdUsuarioCierre,
-                    FechaCierre
-                  FROM periodocontable
-                  ORDER BY Anio DESC, Mes DESC"
+                "sp_periodos_listar",
+                commandType: CommandType.StoredProcedure
             );
         }
 
         public async Task<PeriodoContableEntity?> ObtenerPeriodoAsync(int idPeriodo)
         {
             using var cn = _connectionFactory.CreateConnection();
-
             return await cn.QueryFirstOrDefaultAsync<PeriodoContableEntity>(
-                @"SELECT * FROM periodocontable 
-                  WHERE IdPeriodo = @id",
-                new { id = idPeriodo }
+                "sp_periodo_obtener_por_id",
+                new { p_id_periodo = idPeriodo },
+                commandType: CommandType.StoredProcedure
             );
         }
 
@@ -56,97 +44,41 @@ namespace SistemaContableLaDat.Repository.Cierres
             if (periodoActual == null)
                 throw new Exception("Periodo no encontrado");
 
-            // Buscar el ÚLTIMO periodo CERRADO anterior a este
+            // Buscar periodo anterior cerrado usando SP
             var periodoAnterior = await cn.QueryFirstOrDefaultAsync<PeriodoContableEntity>(
-                @"SELECT * FROM periodocontable 
-          WHERE Estado = 'Cerrado'
-            AND (Anio < @anio OR (Anio = @anio AND Mes < @mes))
-          ORDER BY Anio DESC, Mes DESC
-          LIMIT 1",
+                "sp_periodo_obtener_anterior_cerrado",
                 new
                 {
-                    anio = periodoActual.Anio,
-                    mes = periodoActual.Mes
-                }
+                    p_anio = periodoActual.Anio,
+                    p_mes = periodoActual.Mes
+                },
+                commandType: CommandType.StoredProcedure
             );
 
-            // Si no hay periodo anterior cerrado, usar saldos en 0
+            // Si no hay periodo anterior cerrado, usar NULL
             int? idPeriodoAnterior = periodoAnterior?.IdPeriodo;
 
-            var query = @"
-        -- Saldos al periodo anterior (si existe y está cerrado)
-        WITH SaldosAnteriores AS (
-            SELECT 
-                cc.IdCuenta,
-                cc.CodigoCuenta,
-                cc.Nombre,
-                cc.Tipo,
-                cc.TipoSaldo,
-                COALESCE(
-                    (SELECT SaldoActual 
-                     FROM saldoscuentasperiodo 
-                     WHERE IdCuenta = cc.IdCuenta 
-                       AND IdPeriodo = @idPeriodoAnterior
-                    ), 0) AS SaldoAnterior
-            FROM cuentascontables cc
-            WHERE cc.Estado = 'Activa'
-        ),
-        MovimientosPeriodo AS (
-            SELECT 
-                d.IdCuentaContable,
-                SUM(CASE WHEN d.TipoMovimiento = 'D' THEN d.Monto ELSE 0 END) AS Debitos,
-                SUM(CASE WHEN d.TipoMovimiento = 'C' THEN d.Monto ELSE 0 END) AS Creditos
-            FROM asientocontabledetalle d
-            INNER JOIN asientocontableencabezado e 
-                ON e.IdAsiento = d.IdAsiento
-            WHERE e.IdPeriodo = @idPeriodoActual
-              AND e.IdEstadoAsiento = 3 -- Solo asientos APROBADOS
-            GROUP BY d.IdCuentaContable
-        )
-        SELECT 
-            sa.IdCuenta,
-            sa.CodigoCuenta,
-            sa.Nombre AS NombreCuenta,
-            sa.Tipo AS TipoCuenta,
-            sa.TipoSaldo,
-            sa.SaldoAnterior,
-            COALESCE(mp.Debitos, 0) AS DebitosMes,
-            COALESCE(mp.Creditos, 0) AS CreditosMes,
-            -- Calcular saldo actual según naturaleza de la cuenta
-            CASE sa.TipoSaldo
-                WHEN 'Deudor' THEN 
-                    sa.SaldoAnterior + COALESCE(mp.Debitos, 0) - COALESCE(mp.Creditos, 0)
-                WHEN 'Acreedor' THEN 
-                    sa.SaldoAnterior + COALESCE(mp.Creditos, 0) - COALESCE(mp.Debitos, 0)
-                ELSE sa.SaldoAnterior
-            END AS SaldoActual,
-            -- Determinar naturaleza para el balance
-            CASE sa.Tipo
-                WHEN 'Activo' THEN 'Deudora'
-                WHEN 'Gasto' THEN 'Deudora'
-                WHEN 'Pasivo' THEN 'Acreedora'
-                WHEN 'Capital' THEN 'Acreedora'
-                WHEN 'Ingreso' THEN 'Acreedora'
-                ELSE 'Indeterminada'
-            END AS Naturaleza
-        FROM SaldosAnteriores sa
-        LEFT JOIN MovimientosPeriodo mp ON mp.IdCuentaContable = sa.IdCuenta
-        ORDER BY sa.CodigoCuenta";
-
-            return await cn.QueryAsync<SaldoCuentaDto>(query, new
-            {
-                idPeriodoActual = idPeriodo,
-                idPeriodoAnterior
-            });
+            // Calcular saldos usando SP
+            return await cn.QueryAsync<SaldoCuentaDto>(
+                "sp_cierre_calcular_saldos_periodo",
+                new
+                {
+                    p_id_periodo = idPeriodo,
+                    p_id_periodo_anterior = idPeriodoAnterior
+                },
+                commandType: CommandType.StoredProcedure
+            );
         }
 
         public async Task<ResultadoCierreDto> CalcularBalanceAsync(int idPeriodo)
         {
             using var cn = _connectionFactory.CreateConnection();
 
+            // Obtener saldos del periodo
             var saldos = await CalcularSaldosPeriodoAsync(idPeriodo);
-            var periodo = await ObtenerPeriodoAsync(idPeriodo);
 
+            // Obtener información del periodo
+            var periodo = await ObtenerPeriodoAsync(idPeriodo);
             if (periodo == null)
                 throw new Exception("Periodo no encontrado");
 
@@ -162,7 +94,7 @@ namespace SistemaContableLaDat.Repository.Cierres
                     totalAcreedor += saldo.SaldoActual;
             }
 
-            // Verificar si puede cerrar (periodos anteriores cerrados)
+            // Validar si puede cerrar usando SP
             var puedeCerrar = await ValidarPeriodosAnterioresCerradosAsync(idPeriodo);
 
             var resultado = new ResultadoCierreDto
@@ -189,20 +121,24 @@ namespace SistemaContableLaDat.Repository.Cierres
         {
             using var cn = _connectionFactory.CreateConnection();
 
+            // Obtener periodo actual
             var periodoActual = await ObtenerPeriodoAsync(idPeriodo);
             if (periodoActual == null)
                 return false;
 
-            // Verificar si hay periodos anteriores abiertos
-            var periodosAbiertos = await cn.QueryFirstOrDefaultAsync<int>(
-                @"SELECT COUNT(*) 
-                  FROM periodocontable 
-                  WHERE (Anio < @anio OR (Anio = @anio AND Mes < @mes))
-                    AND Estado = 'Abierto'",
-                new { anio = periodoActual.Anio, mes = periodoActual.Mes }
+            // Validar usando SP
+            var parameters = new DynamicParameters();
+            parameters.Add("p_anio", periodoActual.Anio);
+            parameters.Add("p_mes", periodoActual.Mes);
+            parameters.Add("p_puede_cerrar", dbType: DbType.Boolean, direction: ParameterDirection.Output);
+
+            await cn.ExecuteAsync(
+                "sp_periodo_validar_anteriores_cerrados",
+                parameters,
+                commandType: CommandType.StoredProcedure
             );
 
-            return periodosAbiertos == 0;
+            return parameters.Get<bool>("p_puede_cerrar");
         }
 
         public async Task<bool> EjecutarCierreAsync(int idPeriodo, int idUsuario)
@@ -211,7 +147,7 @@ namespace SistemaContableLaDat.Repository.Cierres
 
             try
             {
-                // ABRIR LA CONEXIÓN EXPLÍCITAMENTE
+                // ABRIR CONEXIÓN para transacción
                 cn.Open();
 
                 // Iniciar transacción
@@ -219,7 +155,7 @@ namespace SistemaContableLaDat.Repository.Cierres
 
                 try
                 {
-                    // 1. Verificar que se pueda cerrar
+                    // 1. Validar que se pueda cerrar
                     var puedeCerrar = await ValidarPeriodosAnterioresCerradosAsync(idPeriodo);
                     if (!puedeCerrar)
                         throw new Exception("No se puede cerrar: hay periodos anteriores abiertos");
@@ -234,54 +170,51 @@ namespace SistemaContableLaDat.Repository.Cierres
                     if (totalDeudor != totalAcreedor)
                         throw new Exception($"El periodo no está balanceado. Diferencia: {Math.Abs(totalDeudor - totalAcreedor):C}");
 
-                    // 4. Insertar saldos del periodo en tabla de histórico
+                    // 4. Insertar saldos usando SP
                     foreach (var saldo in saldos)
                     {
                         await cn.ExecuteAsync(
-                            @"INSERT INTO saldoscuentasperiodo 
-                      (IdPeriodo, IdCuenta, SaldoAnterior, DebitosPeriodo, 
-                       CreditosPeriodo, SaldoActual, FechaRegistro)
-                      VALUES (@IdPeriodo, @IdCuenta, @SaldoAnterior, @DebitosMes, 
-                              @CreditosMes, @SaldoActual, NOW())",
+                            "sp_saldos_insertar_por_periodo",
                             new
                             {
-                                IdPeriodo = idPeriodo,
-                                IdCuenta = saldo.IdCuenta,
-                                SaldoAnterior = saldo.SaldoAnterior,
-                                DebitosMes = saldo.DebitosMes,
-                                CreditosMes = saldo.CreditosMes,
-                                SaldoActual = saldo.SaldoActual
+                                p_id_periodo = idPeriodo,
+                                p_id_cuenta = saldo.IdCuenta,
+                                p_saldo_anterior = saldo.SaldoAnterior,
+                                p_debitos_mes = saldo.DebitosMes,
+                                p_creditos_mes = saldo.CreditosMes,
+                                p_saldo_actual = saldo.SaldoActual
                             },
-                            transaction
+                            transaction,
+                            commandType: CommandType.StoredProcedure
                         );
                     }
 
-                    // 5. Actualizar estado del periodo
+                    // 5. Cerrar periodo usando SP
                     await cn.ExecuteAsync(
-                        @"UPDATE periodocontable 
-                  SET Estado = 'Cerrado',
-                      IdUsuarioCierre = @idUsuario,
-                      FechaCierre = NOW()
-                  WHERE IdPeriodo = @idPeriodo",
-                        new { idPeriodo, idUsuario },
-                        transaction
-                    );
-
-                    // 6. Registrar en tabla de cierres (histórico)
-                    await cn.ExecuteAsync(
-                        @"INSERT INTO cierrescontables 
-                  (IdPeriodo, FechaCierre, IdUsuarioCierre, 
-                   TotalDebe, TotalHaber, Estado, FechaRegistro)
-                  VALUES (@IdPeriodo, NOW(), @IdUsuarioCierre,
-                          @TotalDebe, @TotalHaber, 'COMPLETADO', NOW())",
+                        "sp_periodo_cerrar",
                         new
                         {
-                            IdPeriodo = idPeriodo,
-                            IdUsuarioCierre = idUsuario,
-                            TotalDebe = totalDeudor,
-                            TotalHaber = totalAcreedor
+                            p_id_periodo = idPeriodo,
+                            p_id_usuario = idUsuario
                         },
-                        transaction
+                        transaction,
+                        commandType: CommandType.StoredProcedure
+                    );
+
+                    // 6. Registrar cierre usando SP
+                    await cn.ExecuteAsync(
+                        "sp_cierre_registrar",
+                        new
+                        {
+                            p_id_periodo = idPeriodo,
+                            p_id_usuario_cierre = idUsuario,
+                            p_total_debe = totalDeudor,
+                            p_total_haber = totalAcreedor,
+                            p_estado = "COMPLETADO",
+                            p_mensaje = (string?)null
+                        },
+                        transaction,
+                        commandType: CommandType.StoredProcedure
                     );
 
                     // Commit de la transacción
@@ -293,20 +226,20 @@ namespace SistemaContableLaDat.Repository.Cierres
                     // Rollback en caso de error
                     transaction.Rollback();
 
-                    // Registrar el error en la tabla de cierres (con conexión nueva para evitar problemas)
+                    // Registrar error usando SP (con nueva conexión)
                     using var cnError = _connectionFactory.CreateConnection();
                     await cnError.ExecuteAsync(
-                        @"INSERT INTO cierrescontables 
-                  (IdPeriodo, FechaCierre, IdUsuarioCierre, 
-                   Estado, Mensaje, FechaRegistro)
-                  VALUES (@IdPeriodo, NOW(), @IdUsuarioCierre,
-                          'ERROR', @Mensaje, NOW())",
+                        "sp_cierre_registrar",
                         new
                         {
-                            IdPeriodo = idPeriodo,
-                            IdUsuarioCierre = idUsuario,
-                            Mensaje = $"Error en el proceso de cierre: {ex.Message}"
-                        }
+                            p_id_periodo = idPeriodo,
+                            p_id_usuario_cierre = idUsuario,
+                            p_total_debe = 0,
+                            p_total_haber = 0,
+                            p_estado = "ERROR",
+                            p_mensaje = $"Error en el proceso de cierre: {ex.Message}"
+                        },
+                        commandType: CommandType.StoredProcedure
                     );
 
                     throw new Exception($"Error en transacción de cierre: {ex.Message}", ex);
@@ -314,7 +247,6 @@ namespace SistemaContableLaDat.Repository.Cierres
             }
             catch (Exception ex)
             {
-                // Re-lanzar la excepción para que el service la maneje
                 throw new Exception($"Error ejecutando cierre: {ex.Message}", ex);
             }
         }
@@ -323,31 +255,17 @@ namespace SistemaContableLaDat.Repository.Cierres
         {
             using var cn = _connectionFactory.CreateConnection();
 
-            // Primero verificar si la tabla existe
-            var tablaExiste = await cn.QueryFirstOrDefaultAsync<int?>(
-                @"SELECT COUNT(*) 
-                  FROM information_schema.tables 
-                  WHERE table_schema = DATABASE() 
-                    AND table_name = 'cierrescontables'"
-            );
+            // Verificar si la tabla existe usando SP
+            bool tablaExiste = await VerificarTablaExisteAsync("cierrescontables");
 
-            if (tablaExiste == 0 || tablaExiste == null)
+            if (!tablaExiste)
             {
                 return new CierreContableEntity();
             }
 
             return await cn.QueryFirstOrDefaultAsync<CierreContableEntity>(
-                @"SELECT 
-                    c.*,
-                    CONCAT(u.NombreUsuario, ' ', u.ApellidoUsuario) as NombreUsuario,
-                    p.Anio,
-                    p.Mes
-                  FROM cierrescontables c
-                  LEFT JOIN periodocontable p ON p.IdPeriodo = c.IdPeriodo
-                  LEFT JOIN usuarios u ON u.IdUsuario = c.IdUsuarioCierre
-                  WHERE c.Estado = 'COMPLETADO'
-                  ORDER BY c.FechaCierre DESC
-                  LIMIT 1"
+                "sp_cierre_obtener_ultimo",
+                commandType: CommandType.StoredProcedure
             ) ?? new CierreContableEntity();
         }
 
@@ -355,30 +273,45 @@ namespace SistemaContableLaDat.Repository.Cierres
         {
             using var cn = _connectionFactory.CreateConnection();
 
-            // Verificar si la tabla existe
-            var tablaExiste = await cn.QueryFirstOrDefaultAsync<int?>(
-                @"SELECT COUNT(*) 
-                  FROM information_schema.tables 
-                  WHERE table_schema = DATABASE() 
-                    AND table_name = 'cierrescontables'"
-            );
+            // Verificar si la tabla existe usando SP
+            bool tablaExiste = await VerificarTablaExisteAsync("cierrescontables");
 
-            if (tablaExiste == 0 || tablaExiste == null)
+            if (!tablaExiste)
             {
                 return new List<CierreContableEntity>();
             }
 
             return await cn.QueryAsync<CierreContableEntity>(
-                @"SELECT 
-                    c.*,
-                    CONCAT(u.NombreUsuario, ' ', u.ApellidoUsuario) as NombreUsuario,
-                    p.Anio,
-                    p.Mes
-                  FROM cierrescontables c
-                  INNER JOIN periodocontable p ON p.IdPeriodo = c.IdPeriodo
-                  LEFT JOIN usuarios u ON u.IdUsuario = c.IdUsuarioCierre
-                  ORDER BY c.FechaCierre DESC"
+                "sp_cierres_listar",
+                commandType: CommandType.StoredProcedure
             );
+        }
+
+        // ========== MÉTODOS PRIVADOS ==========
+
+        private async Task<bool> VerificarTablaExisteAsync(string nombreTabla)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_nombre_tabla", nombreTabla);
+            parameters.Add("p_existe", dbType: DbType.Boolean, direction: ParameterDirection.Output);
+
+            await cn.ExecuteAsync(
+                "sp_tabla_existe",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return parameters.Get<bool>("p_existe");
+        }
+
+
+        public async Task<int> CorregirAsientosPeriodoIncorrectoAsync()
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            return 0;
         }
     }
 }

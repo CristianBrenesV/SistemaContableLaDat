@@ -8,6 +8,7 @@
 <h1 class="mt-4">Cierre Contable</h1>
 <p class="lead">Administración de cierres contables mensuales</p>
 
+
 @if (!string.IsNullOrEmpty(Model.SuccessMessage))
 {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -27,8 +28,8 @@
 <!-- Información del último cierre -->
 @if (Model.UltimoCierre.IdCierre > 0)
 {
-    <div class="card mb-4 border-success">
-        <div class="card-header bg-success text-white">
+    <div class="card mb-4 border-dark">
+        <div class="card-header bg-dark text-white">
             <h5 class="mb-0"><i class="bi bi-check-circle"></i> Último Cierre Ejecutado</h5>
         </div>
         <div class="card-body">
@@ -56,7 +57,7 @@
 
 <!-- Tabla de periodos -->
 <div class="card">
-    <div class="card-header bg-primary text-white">
+    <div class="card-header bg-dark text-white">
         <h5 class="mb-0"><i class="bi bi-calendar-month"></i> Periodos Contables</h5>
     </div>
     <div class="card-body">
@@ -69,8 +70,8 @@
         else
         {
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-bordered table-striped table-dark">
+                    <thead class="table-dark">
                         <tr>
                             <th>Periodo</th>
                             <th>Año</th>
@@ -108,7 +109,7 @@
                                     {
                                         <form method="post" asp-page-handler="Calcular" class="d-inline">
                                             <input type="hidden" name="idPeriodo" value="@periodo.IdPeriodo" />
-                                            <button type="submit" class="btn btn-sm btn-primary">
+                                            <button type="submit" class="btn btn-sm btn-dark">
                                                 <i class="bi bi-calculator"></i> Calcular Cierre
                                             </button>
                                         </form>
