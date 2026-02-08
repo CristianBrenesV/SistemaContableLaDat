@@ -24,9 +24,12 @@ namespace SistemaContableLaDat.Service.Asientos
             await _bitacora.RegistrarConsultaAsync(
                 idUsuario.ToString(),
                 "Asientos por Periodo",
-                new { IdPeriodo = idPeriodo },
-                "Consulta de asientos",
-                new { idPeriodo, idEstado }
+                new
+                {
+                    IdPeriodo = idPeriodo,
+                    IdEstado = idEstado,
+                    Detalle = "Consulta de asientos"
+                }
             );
 
             return await _repo.ListarPorPeriodoAsync(idPeriodo, idEstado);
