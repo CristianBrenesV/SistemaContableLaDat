@@ -24,6 +24,12 @@ namespace SistemaContableLaDat.Service.Periodos
             }).ToList();
         }
 
+        public async Task<int> ObtenerIdPeriodoPorFechaAsync(DateTime fecha)
+        {
+            var periodo = await _repository.ObtenerPorFechaAsync(fecha);
+            return periodo?.IdPeriodo ?? 0;
+        }
+
         public async Task<int> ObtenerIdPeriodoActivoAsync()
         {
             var activo = await _repository.ObtenerActivoAsync();

@@ -4,6 +4,7 @@ using SistemaContableLaDat.Entities.Asientos;
 using SistemaContableLaDat.Entities.Cuentas;
 using SistemaContableLaDat.Service.Asientos;
 using SistemaContableLaDat.Service.Cuentas;
+using SistemaContableLaDat.Service.Periodos; 
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -13,11 +14,13 @@ namespace SistemaContableLaDat.Web.Pages.Asientos
     {
         private readonly AsientoService _asientoService;
         private readonly CuentaService _cuentaService;
+        private readonly PeriodoService _periodoService; 
 
-        public CrearModel(AsientoService asientoService, CuentaService cuentaService)
+        public CrearModel(AsientoService asientoService, CuentaService cuentaService, PeriodoService periodoService)
         {
             _asientoService = asientoService;
             _cuentaService = cuentaService;
+            _periodoService = periodoService;
         }
 
         [BindProperty]
@@ -39,26 +42,27 @@ namespace SistemaContableLaDat.Web.Pages.Asientos
             try
             {
                 if (string.IsNullOrWhiteSpace(DetallesJson))
-                {
-                    ModelState.AddModelError("", "Debe ingresar al menos una línea de detalle.");
-                    CargarDatos();
-                    return Page();
-                }
+                    throw new Exception("Debe ingresar al menos una línea de detalle.");
 
-                var detalles = JsonSerializer.Deserialize<List<AsientoDetalleEntity>>(DetallesJson);
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var detalles = JsonSerializer.Deserialize<List<AsientoDetalleEntity>>(DetallesJson, options);
 
                 if (detalles == null || !detalles.Any())
+                    throw new Exception("El detalle del asiento no puede estar vacío.");
+
+                int idPeriodo = await _periodoService.ObtenerIdPeriodoPorFechaAsync(Encabezado.Fecha);
+
+                if (idPeriodo == 0)
                 {
-                    ModelState.AddModelError("", "El detalle del asiento no puede estar vacío.");
-                    CargarDatos();
-                    return Page();
+                    throw new Exception($"No se encontró un periodo contable ABIERTO para la fecha " +
+                                        $"{Encabezado.Fecha:MM/yyyy}. Verifique que el periodo esté creado y abierto.");
                 }
 
-                // Obtener ID de usuario desde los Claims
+                Encabezado.IdPeriodo = idPeriodo;
+
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 int idUsuario = userIdClaim != null ? int.Parse(userIdClaim.Value) : 0;
 
-                // Llamada al servicio con el nombre corregido
                 await _asientoService.CrearAsync(Encabezado, detalles, idUsuario);
 
                 return RedirectToPage("Index");

@@ -27,5 +27,14 @@ namespace SistemaContableLaDat.Repository.Periodos
             const string sql = "SELECT * FROM periodocontable WHERE Estado = 'Abierto' LIMIT 1";
             return await cn.QueryFirstOrDefaultAsync<PeriodoContable>(sql);
         }
+        public async Task<PeriodoContable?> ObtenerPorFechaAsync(DateTime fecha)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+            const string sql = @"SELECT * FROM periodocontable 
+                         WHERE Mes = @Mes AND Anio = @Anio AND Estado = 'Abierto' 
+                         LIMIT 1";
+            return await cn.QueryFirstOrDefaultAsync<PeriodoContable>(sql, new { Mes = fecha.Month, Anio = fecha.Year });
+        }
+
     }
 }
