@@ -1,205 +1,201 @@
 ﻿@page "{id:int}"
-@model SistemaContableLaDat.Web.Pages.Asientos.EditarModel
-@using SistemaContableLaDat.Entities.Asientos
-
+@model SistemaContableLaDat.Pages.Asientos.EditarModel
 @{
-    ViewData["Title"] = "Editar Asiento";
+    ViewData["Title"] = "Edición de Asiento";
     Layout = "_PrincipalLayout";
-
-    var opcionesCuentas = "<option value=\"\">-- Cuenta --</option>";
-    foreach (var c in Model.Cuentas)
-    {
-        opcionesCuentas += $"<option value='{c.IdCuenta}'>{c.CodigoCuenta} - {c.Nombre}</option>";
-    }
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Editar Asiento Contable</h2>
+<div class="container-fluid">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Administración de Asiento #@Model.Encabezado.Consecutivo</h5>
+            <span id="badgeEstado" class="badge bg-info">Analizando...</span>
+        </div>
+        <div class="card-body">
+            <form id="formAsiento" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-    <div>
-        <a asp-page="Index" class="btn btn-outline-secondary me-2">← Volver</a>
-        <button type="submit" form="formEditar" class="btn btn-dark">Guardar</button>
+                <input type="hidden" asp-for="Encabezado.IdAsiento" />
+                <input type="hidden" asp-for="Encabezado.IdPeriodo" />
+                <input type="hidden" asp-for="Encabezado.Consecutivo" />
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Código</label>
+                        <input asp-for="Encabezado.Codigo" class="form-control" readonly />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Fecha</label>
+                        <input asp-for="Encabezado.Fecha" type="date" class="form-control" />
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label fw-bold">Referencia (Descripción)</label>
+                        <input asp-for="Encabezado.Referencia" class="form-control" placeholder="Ej: Pago de servicios públicos" />
+                    </div>
+                </div>
+
+                <hr />
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Detalle de Movimientos</h5>
+                    <button type="button" class="btn btn-success btn-sm" onclick="agregarFila()">
+                        <i class="bi bi-plus-circle"></i> Agregar Línea
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="tablaDetalles">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 35%;">Cuenta Contable</th>
+                                <th style="width: 15%;">Tipo</th>
+                                <th style="width: 20%;">Monto</th>
+                                <th>Descripción</th>
+                                <th style="width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyDetalles">
+                            @for (int i = 0; i < Model.Detalles.Count; i++)
+                            {
+                                <tr class="fila-detalle">
+                                    <td>
+                                        <input type="hidden" name="Detalles[@i].IdAsientoDetalle" value="@Model.Detalles[i].IdAsientoDetalle" />
+                                        <input type="number" name="Detalles[@i].IdCuentaContable" value="@Model.Detalles[i].IdCuentaContable" class="form-control form-control-sm" required />
+                                        <small class="text-muted">ID: @Model.Detalles[i].IdCuentaContable</small>
+                                    </td>
+                                    <td>
+                                        <select name="Detalles[@i].TipoMovimiento" class="form-select form-select-sm select-tipo" onchange="recalcular()">
+                                            <option value="D" selected="@(Model.Detalles[i].TipoMovimiento == "D")">Débito</option>
+                                            <option value="C" selected="@(Model.Detalles[i].TipoMovimiento == "C")">Crédito</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" name="Detalles[@i].Monto"
+                                               value="@Model.Detalles[i].Monto.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                               class="form-control form-control-sm text-end input-monto"
+                                               oninput="recalcular()" required />
+                                    </td>
+                                    <td>
+                                        <input type="text" name="Detalles[@i].Descripcion" value="@Model.Detalles[i].Descripcion" class="form-control form-control-sm" />
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="eliminarFila(this)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-secondary fw-bold">
+                                <td colspan="2" class="text-end">TOTALES:</td>
+                                <td>
+                                    <div class="d-flex justify-content-between px-2">
+                                        <span>D: <span id="totalDebe">0.00</span></span>
+                                        <span>H: <span id="totalHaber">0.00</span></span>
+                                    </div>
+                                </td>
+                                <td colspan="2" id="msgBalance" class="text-center"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="mt-4 border-top pt-3 text-end">
+                    <a asp-page="./Index" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" id="btnGuardar" class="btn btn-primary px-4">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
-
-<div class="alert alert-danger d-none" id="alertaBalance">
-    El asiento no está balanceado. El total Débito debe ser igual al Crédito.
-</div>
-
-<div class="mb-3">
-    <span class="me-3"><strong>Débito:</strong> <span id="totalDebe">0.00</span></span>
-    <span class="me-3"><strong>Crédito:</strong> <span id="totalHaber">0.00</span></span>
-    <strong>Estado:</strong>
-    <span id="estadoBalance" class="badge"></span>
-</div>
-
-<form method="post" id="formEditar">
-    <input type="hidden" asp-for="Encabezado.IdAsiento" />
-    <input type="hidden" id="DetallesJson" name="DetallesJson" />
-
-    <div class="row mb-3">
-        <div class="col-md-3">
-            <label class="form-label">Código</label>
-            <input class="form-control" value="@Model.Encabezado.Codigo" readonly />
-        </div>
-
-        <div class="col-md-3">
-            <label class="form-label">Fecha</label>
-            <input class="form-control"
-                   value="@Model.Encabezado.Fecha.ToString("dd/MM/yyyy")"
-                   readonly />
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label">Referencia</label>
-            <input asp-for="Encabezado.Referencia" class="form-control" />
-        </div>
-    </div>
-
-    <hr />
-
-    <h5>Detalle del asiento</h5>
-
-    <table class="table table-sm table-hover align-middle">
-        <thead class="table-light">
-            <tr>
-                <th style="width:25%">Cuenta</th>
-                <th style="width:15%">Tipo</th>
-                <th style="width:15%">Monto</th>
-                <th>Descripción</th>
-                <th style="width:5%"></th>
-            </tr>
-        </thead>
-        <tbody id="detalleBody"></tbody>
-    </table>
-
-    <button type="button" class="btn btn-outline-primary btn-sm" onclick="agregarFilaVacia()">
-        + Agregar línea
-    </button>
-</form>
 
 @section Scripts {
     <script>
-        let detalles = [];
-
-        function agregarFilaVacia() {
-            detalles.push({
-                idCuentaContable: "",
-                tipoMovimiento: "D",
-                monto: 0,
-                descripcion: ""
-            });
-            render();
-        }
-
-        function eliminarFila(index) {
-            detalles.splice(index, 1);
-            render();
-        }
-
-        function recalcularBalance() {
+        function recalcular() {
             let debe = 0;
             let haber = 0;
-            let valido = true;
 
-            detalles.forEach(d => {
-                if (!d.idCuentaContable) valido = false;
+            document.querySelectorAll('#tbodyDetalles tr').forEach(fila => {
+                const tipo = fila.querySelector('.select-tipo').value;
+                const monto = parseFloat(fila.querySelector('.input-monto').value) || 0;
 
-                const monto = parseFloat(d.monto) || 0;
-                if (d.tipoMovimiento === "D") debe += monto;
-                if (d.tipoMovimiento === "C") haber += monto;
+                if (tipo === 'D') debe += monto;
+                else haber += monto;
             });
 
-            totalDebe.innerText = debe.toFixed(2);
-            totalHaber.innerText = haber.toFixed(2);
+            document.getElementById('totalDebe').innerText = debe.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            document.getElementById('totalHaber').innerText = haber.toLocaleString('en-US', { minimumFractionDigits: 2 });
 
-            if (debe === haber && debe > 0 && valido) {
-                estadoBalance.innerText = "BALANCEADO";
-                estadoBalance.className = "badge bg-success";
-                return true;
+            const diff = Math.abs(debe - haber);
+            const msgBalance = document.getElementById('msgBalance');
+            const badge = document.getElementById('badgeEstado');
+            const btnGuardar = document.getElementById('btnGuardar');
+
+            btnGuardar.disabled = false;
+
+            if (diff < 0.01 && (debe + haber) > 0) {
+                msgBalance.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Balanceado</span>';
+                badge.className = "badge bg-success";
+                badge.innerText = "Listo para Aprobar";
             } else {
-                estadoBalance.innerText = "NO BALANCEADO";
-                estadoBalance.className = "badge bg-danger";
-                return false;
+                msgBalance.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Desbalanceado (${diff.toFixed(2)})</span>`;
+                badge.className = "badge bg-warning text-dark";
+                badge.innerText = "Borrador (Incompleto)";
             }
         }
 
-        function getOpcionesCuenta(seleccionada) {
-            let html = `<option value="">-- Cuenta --</option>`;
+        function agregarFila() {
+            const tbody = document.getElementById('tbodyDetalles');
+            const index = tbody.querySelectorAll('tr').length;
 
-            @foreach (var c in Model.Cuentas)
-            {
-                    @:html += `<option value="@c.IdCuenta" ${seleccionada === @c.IdCuenta ? "selected" : ""}>@c.CodigoCuenta - @c.Nombre</option>`;
-            }
-
-            return html;
-        }
-
-
-        function render() {
-            let html = "";
-
-            detalles.forEach((d, i) => {
-                html += `
-                <tr>
+            const nuevaFila = `
+                <tr class="fila-detalle">
                     <td>
-                        <select class="form-select"
-                            onchange="detalles[${i}].idCuentaContable=parseInt(this.value); recalcularBalance()">
-                            ${getOpcionesCuenta(d.idCuentaContable)}
+                        <input type="hidden" name="Detalles[${index}].IdAsientoDetalle" value="0" />
+                        <input type="number" name="Detalles[${index}].IdCuentaContable" class="form-control form-control-sm" required />
+                    </td>
+                    <td>
+                        <select name="Detalles[${index}].TipoMovimiento" class="form-select form-select-sm select-tipo" onchange="recalcular()">
+                            <option value="D">Débito</option>
+                            <option value="C">Crédito</option>
                         </select>
                     </td>
-
                     <td>
-                        <select class="form-select"
-                            onchange="detalles[${i}].tipoMovimiento=this.value; recalcularBalance()">
-                            <option value="D" ${d.tipoMovimiento === "D" ? "selected" : ""}>Débito</option>
-                            <option value="C" ${d.tipoMovimiento === "C" ? "selected" : ""}>Crédito</option>
-                        </select>
+                        <input type="number" step="0.01" name="Detalles[${index}].Monto" value="0.00" class="form-control form-control-sm text-end input-monto" oninput="recalcular()" required />
                     </td>
-
                     <td>
-                        <input type="number" step="0.01" class="form-control"
-                            value="${d.monto}"
-                            onchange="detalles[${i}].monto=parseFloat(this.value); recalcularBalance()">
+                        <input type="text" name="Detalles[${index}].Descripcion" class="form-control form-control-sm" />
                     </td>
-
-                    <td>
-                        <input class="form-control"
-                            value="${d.descripcion ?? ""}"
-                            onchange="detalles[${i}].descripcion=this.value">
-                    </td>
-
                     <td class="text-center">
-                        <button type="button" class="btn btn-outline-danger btn-sm"
-                            onclick="eliminarFila(${i})">✕</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="eliminarFila(this)">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </td>
                 </tr>`;
-            });
-
-            detalleBody.innerHTML = html;
-            DetallesJson.value = JSON.stringify(detalles);
-            recalcularBalance();
+            tbody.insertAdjacentHTML('beforeend', nuevaFila);
+            recalcular();
         }
 
-
-        document.getElementById("formEditar").addEventListener("submit", e => {
-            if (!recalcularBalance()) {
-                e.preventDefault();
-                alertaBalance.classList.remove("d-none");
+        function eliminarFila(boton) {
+            if (confirm("¿Está seguro de eliminar esta línea?")) {
+                boton.closest('tr').remove();
+                reindexarFilas();
+                recalcular();
             }
-        });
+        }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            @foreach (var d in Model.Detalles)
-            {
-                    @:detalles.push({
-                    @:  idCuentaContable: @d.IdCuentaContable,
-                    @:  tipoMovimiento: "@d.TipoMovimiento",
-                    @:  monto: @d.Monto,
-                    @:  descripcion: "@d.Descripcion"
-                    @:});
-            }
-            render();
-        });
+        function reindexarFilas() {
+            document.querySelectorAll('#tbodyDetalles tr').forEach((fila, i) => {
+                fila.querySelectorAll('input, select').forEach(input => {
+                    const name = input.name;
+                    if (name) {
+                        input.name = name.replace(/\[\d+\]/, `[${i}]`);
+                    }
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', recalcular);
     </script>
 }

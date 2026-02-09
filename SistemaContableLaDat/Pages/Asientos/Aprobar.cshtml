@@ -1,0 +1,337 @@
+﻿@page
+@model SistemaContableLaDat.Web.Pages.Asientos.AprobarModel
+@using SistemaContableLaDat.Entities.Asientos
+@{
+    ViewData["Title"] = "Aprobación de Asientos";
+    Layout = "_PrincipalLayout";
+}
+
+<h1 class="mt-4">Aprobación de Asientos Contables</h1>
+
+<!-- Filtros -->
+<form method="get" class="mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label for="PeriodoFiltro" class="form-label">Periodo Contable</label>
+            <select asp-for="PeriodoFiltro" class="form-select">
+                <option value="">Todos los periodos</option>
+                @foreach (var periodo in Model.Periodos)
+                {
+                    <option value="@periodo.IdPeriodo">@periodo.Descripcion (@periodo.Estado)</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="EstadoFiltro" class="form-label">Estado del Asiento</label>
+            <select asp-for="EstadoFiltro" class="form-select">
+                <option value="">Todos los estados</option>
+                @foreach (var estado in Model.Estados)
+                {
+                    <option value="@estado.Key">@estado.Value</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="@Url.Page("", new { PeriodoFiltro = (int?)null, EstadoFiltro = (int?)null, PaginaActual = 1 })" 
+               class="btn btn-secondary">Limpiar Filtros</a>
+        </div>
+    </div>
+</form>
+
+<!-- Información del filtro aplicado -->
+@if (Model.PeriodoFiltro.HasValue || Model.EstadoFiltro.HasValue)
+{
+    <div class="alert alert-info mb-3">
+        <strong>Filtros aplicados:</strong>
+        @{
+            var filtros = new List<string>();
+            
+            if (Model.PeriodoFiltro.HasValue)
+            {
+                var periodoSeleccionado = Model.Periodos.FirstOrDefault(p => p.IdPeriodo == Model.PeriodoFiltro.Value);
+                if (periodoSeleccionado != null)
+                {
+                    filtros.Add($"Periodo: {periodoSeleccionado.Descripcion}");
+                }
+            }
+            
+            if (Model.EstadoFiltro.HasValue)
+            {
+                var estadoSeleccionado = Model.Estados.FirstOrDefault(e => e.Key == Model.EstadoFiltro.Value);
+                if (!string.IsNullOrEmpty(estadoSeleccionado.Value))
+                {
+                    filtros.Add($"Estado: {estadoSeleccionado.Value}");
+                }
+            }
+        }
+        @string.Join(" | ", filtros)
+    </div>
+}
+
+<!-- Mensajes -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Tabla de asientos -->
+@if (!Model.Asientos.Any())
+{
+    <div class="alert alert-info">
+        No hay asientos que mostrar con los filtros seleccionados.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Fecha</th>
+                    <th>Periodo</th>
+                    <th>Código</th>
+                    <th>Referencia</th>
+                    <th>Estado</th>
+                    <th>Balance</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model.Asientos)
+                {
+                    var estadoClass = a.IdEstadoAsiento switch
+                    {
+                        (int)EstadoAsiento.Borrador => "table-warning",
+                        (int)EstadoAsiento.PendienteAprobar => "table-info",
+                        (int)EstadoAsiento.Aprobado => "table-success",
+                        (int)EstadoAsiento.Rechazado => "table-danger",
+                        (int)EstadoAsiento.Anulado => "table-secondary",
+                        _ => ""
+                    };
+
+                    <tr class="@estadoClass">
+                        <td>@a.Consecutivo</td>
+                        <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            @if (a is AsientoListadoDtoExtendido extendido && extendido.Anio > 0)
+                            {
+                                <span class="badge bg-secondary">@extendido.Mes/@extendido.Anio</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">N/A</span>
+                            }
+                        </td>
+                        <td>@a.Codigo</td>
+                        <td>@a.Referencia</td>
+                        <td>
+                            <span class="badge bg-secondary">@a.EstadoNombre</span>
+                        </td>
+                        <td>
+                            @if (a.EstaBalanceado)
+                            {
+                                <span class="badge bg-success">Balanceado</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">No balanceado</span>
+                            }
+                        </td>
+                        <td>
+                            <!-- Botón para ver detalles -->
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#det-@a.IdAsiento"
+                                    onclick="cargarDetalle(@a.IdAsiento)">
+                                <i class="bi bi-eye"></i> Detalle
+                            </button>
+
+                            <!-- Botones de acciones dinámicas -->
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                        data-bs-toggle="dropdown" 
+                                        onclick="cargarAcciones(@a.IdAsiento)">
+                                    <i class="bi bi-gear"></i> Acciones
+                                </button>
+                                <ul class="dropdown-menu" id="acciones-@a.IdAsiento">
+                                    <li><a class="dropdown-item disabled">Cargando...</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Fila de detalles desplegable -->
+                    <tr class="collapse bg-light" id="det-@a.IdAsiento">
+                        <td colspan="8">
+                            <div class="p-3">
+                                <h6>Detalles del Asiento</h6>
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Cuenta</th>
+                                            <th>Tipo</th>
+                                            <th>Monto</th>
+                                            <th>Descripción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detalle-@a.IdAsiento">
+                                        <tr>
+                                            <td colspan="4" class="text-muted text-center">
+                                                Cargando detalles...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    @if (Model.TotalPaginas > 1)
+    {
+        <nav aria-label="Paginación">
+            <ul class="pagination justify-content-center">
+                @if (Model.PaginaActual > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="@Url.Page("", new { 
+                               PeriodoFiltro = Model.PeriodoFiltro, 
+                               EstadoFiltro = Model.EstadoFiltro, 
+                               PaginaActual = Model.PaginaActual - 1 
+                           })">
+                            Anterior
+                        </a>
+                    </li>
+                }
+
+                @for (int i = 1; i <= Model.TotalPaginas; i++)
+                {
+                    <li class="page-item @(i == Model.PaginaActual ? "active" : "")">
+                        <a class="page-link" 
+                           href="@Url.Page("", new { 
+                               PeriodoFiltro = Model.PeriodoFiltro, 
+                               EstadoFiltro = Model.EstadoFiltro, 
+                               PaginaActual = i 
+                           })">
+                            @i
+                        </a>
+                    </li>
+                }
+
+                @if (Model.PaginaActual < Model.TotalPaginas)
+                {
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="@Url.Page("", new { 
+                               PeriodoFiltro = Model.PeriodoFiltro, 
+                               EstadoFiltro = Model.EstadoFiltro, 
+                               PaginaActual = Model.PaginaActual + 1 
+                           })">
+                            Siguiente
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+
+    <div class="text-muted text-center">
+        Mostrando @Model.Asientos.Count de @Model.TotalRegistros asientos
+    </div>
+}
+
+<!-- Scripts JavaScript -->
+<script>
+    function cargarDetalle(idAsiento) {
+        fetch(`/Asientos/Index?handler=Detalle&idAsiento=${idAsiento}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Error al cargar detalles');
+                return response.json();
+            })
+            .then(data => {
+                let html = '';
+                data.forEach(item => {
+                    html += `<tr>
+                        <td>${item.cuenta}</td>
+                        <td><span class="badge ${item.tipoMovimiento === 'D' ? 'bg-primary' : 'bg-success'}">
+                            ${item.tipoMovimiento === 'D' ? 'Débito' : 'Crédito'}
+                        </span></td>
+                        <td>${parseFloat(item.monto).toLocaleString('es-ES', { style: 'currency', currency: 'USD' })}</td>
+                        <td>${item.descripcion || ''}</td>
+                    </tr>`;
+                });
+                document.getElementById(`detalle-${idAsiento}`).innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById(`detalle-${idAsiento}`).innerHTML = 
+                    '<tr><td colspan="4" class="text-danger">Error al cargar detalles</td></tr>';
+            });
+    }
+
+    function cargarAcciones(idAsiento) {
+        fetch(`?handler=AccionesPermitidas&idAsiento=${idAsiento}`)
+            .then(response => response.json())
+            .then(acciones => {
+                const menu = document.getElementById(`acciones-${idAsiento}`);
+                menu.innerHTML = '';
+
+                if (Object.keys(acciones).length === 0) {
+                    menu.innerHTML = '<li><a class="dropdown-item disabled">No hay acciones disponibles</a></li>';
+                    return;
+                }
+
+                for (const [texto, valorEstado] of Object.entries(acciones)) {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.className = 'dropdown-item';
+                    a.href = '#';
+                    a.textContent = texto;
+                    a.onclick = function(e) {
+                        e.preventDefault();
+                        cambiarEstado(idAsiento, valorEstado, texto);
+                    };
+                    li.appendChild(a);
+                    menu.appendChild(li);
+                }
+            });
+    }
+
+    function cambiarEstado(idAsiento, nuevoEstado, accion) {
+        if (!confirm(`¿Está seguro de ${accion.toLowerCase()} este asiento?`)) {
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = `?handler=CambiarEstado&idAsiento=${idAsiento}&nuevoEstado=${nuevoEstado}`;
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const inputToken = document.createElement('input');
+        inputToken.type = 'hidden';
+        inputToken.name = '__RequestVerificationToken';
+        inputToken.value = token;
+        form.appendChild(inputToken);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>

@@ -10,6 +10,7 @@
         public int IdPeriodo { get; set; }
         public int IdEstadoAsiento { get; set; }
         public int IdUsuario { get; set; }
+        public string EstadoNombre { get; set; } = string.Empty;
         public List<AsientoDetalleEntity> Detalles { get; set; } = new();
     }
 }

@@ -1,7 +1,8 @@
 ﻿using Dapper;
-using System.Data;
 using SistemaContableLaDat.Entities.Asientos;
+using SistemaContableLaDat.Entities.Cuentas;
 using SistemaContableLaDat.Repository.Infrastructure;
+using System.Data;
 
 namespace SistemaContableLaDat.Repository.Asientos
 {
@@ -14,15 +15,22 @@ namespace SistemaContableLaDat.Repository.Asientos
             _connectionFactory = connectionFactory;
         }
 
-        public IEnumerable<AsientoListadoDto> ListarPorPeriodo(int idPeriodo)
+        public async Task<IEnumerable<AsientoListadoDto>> ListarPorPeriodoAsync(
+            int idPeriodo, int? idEstado = null)
         {
             using var cn = _connectionFactory.CreateConnection();
-            return cn.Query<AsientoListadoDto>(
+
+            return await cn.QueryAsync<AsientoListadoDto>(
                 "sp_asientos_listar_por_periodo",
-                new { p_id_periodo = idPeriodo },
+                new
+                {
+                    p_id_periodo = idPeriodo,
+                    p_id_estado = idEstado
+                },
                 commandType: CommandType.StoredProcedure
             );
         }
+
 
         public async Task<IEnumerable<AsientoDetalleDto>> ListarDetalleAsync(int idAsiento)
         {
@@ -34,13 +42,13 @@ namespace SistemaContableLaDat.Repository.Asientos
             );
         }
 
-
         public AsientoEncabezadoEntity? ObtenerPorId(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
             return cn.QueryFirstOrDefault<AsientoEncabezadoEntity>(
-                "SELECT * FROM asientocontableencabezado WHERE IdAsiento = @id",
-                new { id = idAsiento }
+                "sp_asiento_obtener_por_id",  // CAMBIADO A SP
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
             );
         }
 
@@ -66,12 +74,9 @@ namespace SistemaContableLaDat.Repository.Asientos
             return p.Get<int>("p_id_asiento");
         }
 
-
-
-
         public void InsertarDetalle(AsientoDetalleEntity d)
         {
-            using var cn = _connectionFactory.CreateConnection(); // 🔴 AQUÍ
+            using var cn = _connectionFactory.CreateConnection();
 
             cn.Execute(
                 "sp_asiento_insertar_detalle",
@@ -87,62 +92,58 @@ namespace SistemaContableLaDat.Repository.Asientos
             );
         }
 
-
-
-
         public void ActualizarEncabezado(AsientoEncabezadoEntity a)
         {
             using var cn = _connectionFactory.CreateConnection();
             cn.Execute(
-                @"UPDATE asientocontableencabezado
-                  SET Fecha = @Fecha,
-                      Referencia = @Referencia,
-                      IdEstadoAsiento = @IdEstadoAsiento,
-                      Codigo = @Codigo,   
-                      Consecutivo = @Consecutivo 
-                  WHERE IdAsiento = @IdAsiento",
-                a
+                "sp_asiento_actualizar_encabezado",  // CAMBIADO A SP
+                new
+                {
+                    p_id_asiento = a.IdAsiento,
+                    p_fecha = a.Fecha,
+                    p_referencia = a.Referencia,
+                    p_id_estado_asiento = a.IdEstadoAsiento,
+                    p_codigo = a.Codigo,
+                    p_consecutivo = a.Consecutivo
+                },
+                commandType: CommandType.StoredProcedure
             );
         }
 
         public IEnumerable<AsientoDetalleEntity> ObtenerDetallesPorAsiento(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
-
             return cn.Query<AsientoDetalleEntity>(
-                @"SELECT 
-            IdAsientoDetalle,
-            IdAsiento AS IdAsiento,
-            IdCuentaContable,
-            TipoMovimiento,
-            Monto,
-            Descripcion
-          FROM asientocontabledetalle
-          WHERE IdAsiento = @id",
-                new { id = idAsiento }
+                "sp_asiento_obtener_detalles",  // CAMBIADO A SP
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
             );
         }
-
 
         public void EliminarDetalles(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
-            // Adaptado a tabla real: asientocontabledetalle
             cn.Execute(
-                "DELETE FROM asientocontabledetalle WHERE IdAsiento = @id",
-                new { id = idAsiento }
+                "sp_asiento_eliminar_detalles",  // CAMBIADO A SP
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
             );
         }
 
         public bool TieneRelaciones(int idAsiento)
         {
             using var cn = _connectionFactory.CreateConnection();
-            // Adaptado a tabla real: asientocontabledetalle
-            int count = cn.ExecuteScalar<int>(
-                "SELECT COUNT(*) FROM asientocontabledetalle WHERE IdAsiento = @id",
-                new { id = idAsiento}
+            var parameters = new DynamicParameters();
+            parameters.Add("p_id_asiento", idAsiento);
+            parameters.Add("p_tiene_relaciones", dbType: DbType.Boolean, direction: ParameterDirection.Output);
+
+            cn.Execute(
+                "sp_asiento_tiene_relaciones",  // CAMBIADO A SP
+                parameters,
+                commandType: CommandType.StoredProcedure
             );
-            return count > 0;
+
+            return parameters.Get<bool>("p_tiene_relaciones");
         }
 
         public void Anular(int idAsiento)
@@ -151,6 +152,111 @@ namespace SistemaContableLaDat.Repository.Asientos
             cn.Execute(
                 "sp_asiento_anular",
                 new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<IEnumerable<CuentaComboDto>> ListarCuentasParaComboAsync()
+        {
+            using var cn = _connectionFactory.CreateConnection();
+            return await cn.QueryAsync<CuentaComboDto>(
+                "sp_cuentas_listar_para_combo",  // CAMBIADO A SP
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        // NUEVOS MÉTODOS PARA APROBACIÓN (ya en SP)
+        public async Task<IEnumerable<AsientoListadoDtoExtendido>> ListarConFiltroAsync(AsientoFiltroDto filtro)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            var parameters = new
+            {
+                p_id_periodo = filtro.IdPeriodo,
+                p_id_estado = filtro.IdEstado,
+                p_offset = (filtro.Pagina - 1) * filtro.ItemsPorPagina,
+                p_limit = filtro.ItemsPorPagina
+            };
+
+            return await cn.QueryAsync<AsientoListadoDtoExtendido>(
+                "sp_asientos_listar_filtro",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+
+        public async Task<int> ContarConFiltroAsync(AsientoFiltroDto filtro)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            var parameters = new
+            {
+                p_id_periodo = filtro.IdPeriodo,  // Ahora puede ser NULL
+                p_id_estado = filtro.IdEstado
+            };
+
+            return await cn.ExecuteScalarAsync<int>(
+                "sp_asientos_contar_filtro",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<bool> CambiarEstadoAsync(int idAsiento, int idEstadoNuevo, int idUsuario)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            var parameters = new
+            {
+                p_id_asiento = idAsiento,
+                p_id_estado_nuevo = idEstadoNuevo,
+                p_id_usuario = idUsuario
+            };
+
+            var affectedRows = await cn.ExecuteAsync(
+                "sp_asiento_cambiar_estado",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return affectedRows > 0;
+        }
+
+        public async Task<AsientoEncabezadoEntity?> ObtenerConEstadoAsync(int idAsiento)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+
+            var asiento = await cn.QueryFirstOrDefaultAsync<AsientoEncabezadoEntity>(
+                "sp_asiento_obtener_por_id",
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
+            );
+
+            if (asiento != null)
+            {
+                // Obtener detalles también por SP
+                asiento.Detalles = (await ObtenerDetallesPorAsientoAsync(idAsiento)).ToList();
+            }
+
+            return asiento;
+        }
+
+        private async Task<IEnumerable<AsientoDetalleEntity>> ObtenerDetallesPorAsientoAsync(int idAsiento)
+        {
+            using var cn = _connectionFactory.CreateConnection();
+            return await cn.QueryAsync<AsientoDetalleEntity>(
+                "sp_asiento_obtener_detalles",
+                new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<IEnumerable<PeriodoComboDto>> ListarPeriodosParaComboAsync()
+        {
+            using var cn = _connectionFactory.CreateConnection();
+            return await cn.QueryAsync<PeriodoComboDto>(
+                "sp_periodos_listar_para_combo",
                 commandType: CommandType.StoredProcedure
             );
         }

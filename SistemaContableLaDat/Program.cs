@@ -1,45 +1,71 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using SistemaContableLaDat.Repository.Asientos;
 using SistemaContableLaDat.Repository.Bitacora;
+using SistemaContableLaDat.Repository.Cierres;
 using SistemaContableLaDat.Repository.Cuentas;
 using SistemaContableLaDat.Repository.Infrastructure;
 using SistemaContableLaDat.Repository.Login;
+using SistemaContableLaDat.Repository.Periodos;
 using SistemaContableLaDat.Repository.Usuarios;
 using SistemaContableLaDat.Service.Abstract;
 using SistemaContableLaDat.Service.Asientos;
 using SistemaContableLaDat.Service.Bitacora;
+using SistemaContableLaDat.Service.Cierres;
 using SistemaContableLaDat.Service.Cuentas;
 using SistemaContableLaDat.Service.Encriptado;
 using SistemaContableLaDat.Service.Login;
+using SistemaContableLaDat.Service.Periodos;
 using SistemaContableLaDat.Service.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuración de sesión
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.Name = ".SistemaContable.Session";
+});
+
 // Razor Pages
 builder.Services.AddRazorPages();
+// 1. Configuración de Razor Pages
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AuthorizeFolder("/Usuarios");
+    options.Conventions.AllowAnonymousToPage("/Index");
+});
 
-// Infraestructura
+// 2. Infraestructura
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 
-// Repositorios
+// 3. Repositorios
 builder.Services.AddScoped<UsuarioRepository>();
 builder.Services.AddScoped<LoginRepository>();
 builder.Services.AddScoped<BitacoraRepository>();
 builder.Services.AddScoped<AsientoRepository>();
 builder.Services.AddScoped<CuentaRepository>();
-builder.Services.AddScoped<CuentaService>();
+builder.Services.AddScoped<PeriodoRepository>(); 
 
-// Servicios
+// 4. Servicios
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IBitacoraService, BitacoraService>();
-builder.Services.AddScoped<IEncriptadoService, EncriptadoService>();
 builder.Services.AddScoped<ISeguridadService, SeguridadService>();
-
-builder.Services.AddScoped<LoginService>();
-builder.Services.AddScoped<EncriptadoService>();
+builder.Services.AddScoped<CuentaService>();
+builder.Services.AddScoped<PeriodoService>();
 builder.Services.AddScoped<AsientoService>();
 
+builder.Services.AddScoped<CierreRepository>();
+builder.Services.AddScoped<ICierreService, CierreService>();
+
 // Autenticación
+builder.Services.AddScoped<IEncriptadoService, EncriptadoService>();
+builder.Services.AddScoped<EncriptadoService>();
+
+builder.Services.AddScoped<LoginService>();
+
+// 5. Autenticación
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", options =>
     {
@@ -48,15 +74,9 @@ builder.Services.AddAuthentication("Cookies")
         options.SlidingExpiration = true;
     });
 
-// Autorización
 builder.Services.AddAuthorization();
 
-builder.Services.AddRazorPages(options =>
-{
-    options.Conventions.AuthorizeFolder("/Usuarios");
-    options.Conventions.AllowAnonymousToPage("/Index");
-});
-
+// --- CONSTRUCCIÓN DE LA APP ---
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -65,9 +85,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseSession();
 app.UseStaticFiles();
 app.UseRouting();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapRazorPages();
+
 app.Run();

@@ -1,7 +1,7 @@
 ﻿using Dapper;
-using System.Data;
 using SistemaContableLaDat.Entities.Cuentas;
 using SistemaContableLaDat.Repository.Infrastructure;
+using System.Data;
 
 namespace SistemaContableLaDat.Repository.Cuentas
 {
@@ -21,15 +21,10 @@ namespace SistemaContableLaDat.Repository.Cuentas
         {
             using var cn = _connectionFactory.CreateConnection();
 
+            // CAMBIADO A SP - Necesitaríamos crear este SP también
             return cn.Query<CuentaComboDto>(
-                @"SELECT 
-                    IdCuenta,
-                    CodigoCuenta,
-                    Nombre
-                  FROM cuentascontables
-                  WHERE AceptaMovimiento = 1
-                    AND Estado = 1
-                  ORDER BY CodigoCuenta"
+                "sp_cuentas_listar_movimiento",
+                commandType: CommandType.StoredProcedure
             );
         }
     }
