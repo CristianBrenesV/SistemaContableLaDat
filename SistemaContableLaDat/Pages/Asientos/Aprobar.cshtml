@@ -11,9 +11,19 @@
 <!-- Filtros -->
 <form method="get" class="mb-4">
     <div class="row g-3 align-items-end">
-        <div class="col-md-4">
-            <label for="EstadoFiltro" class="form-label">Filtrar por Estado</label>
-            <select asp-for="EstadoFiltro" class="form-select" onchange="this.form.submit()">
+        <div class="col-md-3">
+            <label for="PeriodoFiltro" class="form-label">Periodo Contable</label>
+            <select asp-for="PeriodoFiltro" class="form-select">
+                <option value="">Todos los periodos</option>
+                @foreach (var periodo in Model.Periodos)
+                {
+                    <option value="@periodo.IdPeriodo">@periodo.Descripcion (@periodo.Estado)</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="EstadoFiltro" class="form-label">Estado del Asiento</label>
+            <select asp-for="EstadoFiltro" class="form-select">
                 <option value="">Todos los estados</option>
                 @foreach (var estado in Model.Estados)
                 {
@@ -23,11 +33,41 @@
         </div>
         <div class="col-md-4">
             <button type="submit" class="btn btn-primary">Filtrar</button>
-            <a href="@Url.Page("", new { EstadoFiltro = (int?)null, PaginaActual = 1 })"
-               class="btn btn-secondary">Limpiar</a>
+            <a href="@Url.Page("", new { PeriodoFiltro = (int?)null, EstadoFiltro = (int?)null, PaginaActual = 1 })" 
+               class="btn btn-secondary">Limpiar Filtros</a>
         </div>
     </div>
 </form>
+
+<!-- Información del filtro aplicado -->
+@if (Model.PeriodoFiltro.HasValue || Model.EstadoFiltro.HasValue)
+{
+    <div class="alert alert-info mb-3">
+        <strong>Filtros aplicados:</strong>
+        @{
+            var filtros = new List<string>();
+            
+            if (Model.PeriodoFiltro.HasValue)
+            {
+                var periodoSeleccionado = Model.Periodos.FirstOrDefault(p => p.IdPeriodo == Model.PeriodoFiltro.Value);
+                if (periodoSeleccionado != null)
+                {
+                    filtros.Add($"Periodo: {periodoSeleccionado.Descripcion}");
+                }
+            }
+            
+            if (Model.EstadoFiltro.HasValue)
+            {
+                var estadoSeleccionado = Model.Estados.FirstOrDefault(e => e.Key == Model.EstadoFiltro.Value);
+                if (!string.IsNullOrEmpty(estadoSeleccionado.Value))
+                {
+                    filtros.Add($"Estado: {estadoSeleccionado.Value}");
+                }
+            }
+        }
+        @string.Join(" | ", filtros)
+    </div>
+}
 
 <!-- Mensajes -->
 @if (TempData["SuccessMessage"] != null)
@@ -61,6 +101,7 @@ else
                 <tr>
                     <th>#</th>
                     <th>Fecha</th>
+                    <th>Periodo</th>
                     <th>Código</th>
                     <th>Referencia</th>
                     <th>Estado</th>
@@ -84,6 +125,16 @@ else
                     <tr class="@estadoClass">
                         <td>@a.Consecutivo</td>
                         <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            @if (a is AsientoListadoDtoExtendido extendido && extendido.Anio > 0)
+                            {
+                                <span class="badge bg-secondary">@extendido.Mes/@extendido.Anio</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">N/A</span>
+                            }
+                        </td>
                         <td>@a.Codigo</td>
                         <td>@a.Referencia</td>
                         <td>
@@ -101,8 +152,8 @@ else
                         </td>
                         <td>
                             <!-- Botón para ver detalles -->
-                            <button class="btn btn-sm btn-outline-primary"
-                                    data-bs-toggle="collapse"
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="collapse" 
                                     data-bs-target="#det-@a.IdAsiento"
                                     onclick="cargarDetalle(@a.IdAsiento)">
                                 <i class="bi bi-eye"></i> Detalle
@@ -110,8 +161,8 @@ else
 
                             <!-- Botones de acciones dinámicas -->
                             <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                        data-bs-toggle="dropdown"
+                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                        data-bs-toggle="dropdown" 
                                         onclick="cargarAcciones(@a.IdAsiento)">
                                     <i class="bi bi-gear"></i> Acciones
                                 </button>
@@ -124,7 +175,7 @@ else
 
                     <!-- Fila de detalles desplegable -->
                     <tr class="collapse bg-light" id="det-@a.IdAsiento">
-                        <td colspan="7">
+                        <td colspan="8">
                             <div class="p-3">
                                 <h6>Detalles del Asiento</h6>
                                 <table class="table table-sm mb-0">
@@ -160,8 +211,12 @@ else
                 @if (Model.PaginaActual > 1)
                 {
                     <li class="page-item">
-                        <a class="page-link"
-                           href="@Url.Page("", new { EstadoFiltro = Model.EstadoFiltro, PaginaActual = Model.PaginaActual - 1 })">
+                        <a class="page-link" 
+                           href="@Url.Page("", new { 
+                               PeriodoFiltro = Model.PeriodoFiltro, 
+                               EstadoFiltro = Model.EstadoFiltro, 
+                               PaginaActual = Model.PaginaActual - 1 
+                           })">
                             Anterior
                         </a>
                     </li>
@@ -170,8 +225,12 @@ else
                 @for (int i = 1; i <= Model.TotalPaginas; i++)
                 {
                     <li class="page-item @(i == Model.PaginaActual ? "active" : "")">
-                        <a class="page-link"
-                           href="@Url.Page("", new { EstadoFiltro = Model.EstadoFiltro, PaginaActual = i })">
+                        <a class="page-link" 
+                           href="@Url.Page("", new { 
+                               PeriodoFiltro = Model.PeriodoFiltro, 
+                               EstadoFiltro = Model.EstadoFiltro, 
+                               PaginaActual = i 
+                           })">
                             @i
                         </a>
                     </li>
@@ -180,8 +239,12 @@ else
                 @if (Model.PaginaActual < Model.TotalPaginas)
                 {
                     <li class="page-item">
-                        <a class="page-link"
-                           href="@Url.Page("", new { EstadoFiltro = Model.EstadoFiltro, PaginaActual = Model.PaginaActual + 1 })">
+                        <a class="page-link" 
+                           href="@Url.Page("", new { 
+                               PeriodoFiltro = Model.PeriodoFiltro, 
+                               EstadoFiltro = Model.EstadoFiltro, 
+                               PaginaActual = Model.PaginaActual + 1 
+                           })">
                             Siguiente
                         </a>
                     </li>
@@ -219,7 +282,7 @@ else
             })
             .catch(error => {
                 console.error('Error:', error);
-                document.getElementById(`detalle-${idAsiento}`).innerHTML =
+                document.getElementById(`detalle-${idAsiento}`).innerHTML = 
                     '<tr><td colspan="4" class="text-danger">Error al cargar detalles</td></tr>';
             });
     }

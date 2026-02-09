@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using SistemaContableLaDat.Entities.Asientos;
@@ -7,16 +6,19 @@ using System.Security.Claims;
 
 namespace SistemaContableLaDat.Web.Pages.Asientos
 {
-    [Authorize]
     public class AprobarModel : PageModel
     {
         private readonly AsientoService _asientoService;
 
         public List<AsientoListadoDto> Asientos { get; set; } = new();
         public Dictionary<int, string> Estados { get; set; } = new();
+        public List<PeriodoComboDto> Periodos { get; set; } = new();
         public AsientoFiltroDto Filtro { get; set; } = new();
         public int TotalPaginas { get; set; }
         public int TotalRegistros { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? PeriodoFiltro { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? EstadoFiltro { get; set; }
@@ -32,7 +34,9 @@ namespace SistemaContableLaDat.Web.Pages.Asientos
         public async Task OnGetAsync()
         {
             await CargarEstados();
+            await CargarPeriodos();
 
+            Filtro.IdPeriodo = PeriodoFiltro; // allow null to propagate
             Filtro.IdEstado = EstadoFiltro;
             Filtro.Pagina = PaginaActual;
             Filtro.ItemsPorPagina = 10;
@@ -69,6 +73,7 @@ namespace SistemaContableLaDat.Web.Pages.Asientos
 
             return RedirectToPage(new
             {
+                PeriodoFiltro = PeriodoFiltro,
                 EstadoFiltro = EstadoFiltro,
                 PaginaActual = PaginaActual
             });
@@ -90,6 +95,12 @@ namespace SistemaContableLaDat.Web.Pages.Asientos
                 { (int)EstadoAsiento.Rechazado, "Rechazado" },
                 { (int)EstadoAsiento.Anulado, "Anulado" }
             };
+        }
+
+        private async Task CargarPeriodos()
+        {
+            var periodos = await _asientoService.ObtenerPeriodosParaComboAsync();
+            Periodos = periodos.ToList();
         }
     }
 }

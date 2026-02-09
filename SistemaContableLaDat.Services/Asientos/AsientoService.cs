@@ -268,5 +268,10 @@ namespace SistemaContableLaDat.Service.Asientos
             if (!detalles.Any(d => d.TipoMovimiento == "D") || !detalles.Any(d => d.TipoMovimiento == "C"))
                 throw new Exception("El asiento debe contener al menos un Débito y un Crédito.");
         }
+
+        public async Task<IEnumerable<PeriodoComboDto>> ObtenerPeriodosParaComboAsync()
+        {
+            return await _repo.ListarPeriodosParaComboAsync();
+        }
     }
 }

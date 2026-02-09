@@ -166,7 +166,7 @@ namespace SistemaContableLaDat.Repository.Asientos
         }
 
         // NUEVOS MÉTODOS PARA APROBACIÓN (ya en SP)
-        public async Task<IEnumerable<AsientoListadoDto>> ListarConFiltroAsync(AsientoFiltroDto filtro)
+        public async Task<IEnumerable<AsientoListadoDtoExtendido>> ListarConFiltroAsync(AsientoFiltroDto filtro)
         {
             using var cn = _connectionFactory.CreateConnection();
 
@@ -178,12 +178,13 @@ namespace SistemaContableLaDat.Repository.Asientos
                 p_limit = filtro.ItemsPorPagina
             };
 
-            return await cn.QueryAsync<AsientoListadoDto>(
+            return await cn.QueryAsync<AsientoListadoDtoExtendido>(
                 "sp_asientos_listar_filtro",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
         }
+
 
         public async Task<int> ContarConFiltroAsync(AsientoFiltroDto filtro)
         {
@@ -191,7 +192,7 @@ namespace SistemaContableLaDat.Repository.Asientos
 
             var parameters = new
             {
-                p_id_periodo = filtro.IdPeriodo,
+                p_id_periodo = filtro.IdPeriodo,  // Ahora puede ser NULL
                 p_id_estado = filtro.IdEstado
             };
 
@@ -247,6 +248,15 @@ namespace SistemaContableLaDat.Repository.Asientos
             return await cn.QueryAsync<AsientoDetalleEntity>(
                 "sp_asiento_obtener_detalles",
                 new { p_id_asiento = idAsiento },
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<IEnumerable<PeriodoComboDto>> ListarPeriodosParaComboAsync()
+        {
+            using var cn = _connectionFactory.CreateConnection();
+            return await cn.QueryAsync<PeriodoComboDto>(
+                "sp_periodos_listar_para_combo",
                 commandType: CommandType.StoredProcedure
             );
         }
