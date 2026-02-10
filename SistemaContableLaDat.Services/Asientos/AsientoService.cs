@@ -50,11 +50,9 @@ namespace SistemaContableLaDat.Service.Asientos
             encabezado.IdUsuario = idUsuario;
             if (encabezado.IdPeriodo <= 0) throw new Exception("Debe especificar un periodo válido.");
 
-            // Lógica de Cuadratura
             decimal debe = detalles.Where(d => d.TipoMovimiento == "D").Sum(d => d.Monto);
             decimal haber = detalles.Where(d => d.TipoMovimiento == "C").Sum(d => d.Monto);
 
-            // Si no cuadra, queda en Borrador; si cuadra, pasa a Pendiente de Aprobar
             encabezado.IdEstadoAsiento = (debe == haber && debe > 0)
                     ? (int)EstadoAsiento.PendienteAprobar
                     : (int)EstadoAsiento.Borrador;
@@ -113,7 +111,7 @@ namespace SistemaContableLaDat.Service.Asientos
             using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
             _repo.ActualizarEncabezado(encabezado);
-            _repo.EliminarDetalles(encabezado.IdAsiento); // Limpieza de líneas previas
+            _repo.EliminarDetalles(encabezado.IdAsiento); 
 
             foreach (var d in detalles)
             {
@@ -204,7 +202,6 @@ namespace SistemaContableLaDat.Service.Asientos
 
         private bool ValidarCambioEstado(int estadoActual, int estadoNuevo)
         {
-            // Un asiento anulado o borrador no puede cambiar de estado mediante esta función general
             if (estadoActual == (int)EstadoAsiento.Anulado || estadoActual == (int)EstadoAsiento.Borrador)
                 return false;
 
@@ -273,5 +270,10 @@ namespace SistemaContableLaDat.Service.Asientos
         {
             return await _repo.ListarPeriodosParaComboAsync();
         }
+        public async Task<int> ObtenerSiguienteConsecutivoAsync()
+        {
+            return await _repo.ObtenerSiguienteConsecutivoAsync();
+        }
+
     }
 }

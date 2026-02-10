@@ -31,9 +31,16 @@ namespace SistemaContableLaDat.Web.Pages.Asientos
 
         public List<CuentaComboDto> Cuentas { get; set; } = new();
 
-        public void OnGet()
+        public async Task OnGetAsync()
         {
             Encabezado.Fecha = DateTime.Today;
+
+            int siguiente = await _asientoService.ObtenerSiguienteConsecutivoAsync();
+
+            Encabezado.Consecutivo = siguiente;
+
+            Encabezado.Codigo = $"AS-{siguiente:D4}";
+
             CargarDatos();
         }
 
