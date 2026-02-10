@@ -31,6 +31,8 @@
                         <option value="@((int)EstadoAsiento.Borrador)">Borrador</option>
                         <option value="@((int)EstadoAsiento.PendienteAprobar)">Pendiente de Aprobar</option>
                         <option value="@((int)EstadoAsiento.Aprobado)">Aprobado</option>
+                        <option value="@((int)EstadoAsiento.Rechazado)">Rechazado</option>
+                        <option value="@((int)EstadoAsiento.Anulado)">Anulado</option>
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -68,12 +70,15 @@
                             @{
                                 var badgeClass = a.IdEstadoAsiento switch
                                 {
-                                    (int)EstadoAsiento.Borrador => "bg-secondary",
-                                    (int)EstadoAsiento.PendienteAprobar => "bg-info text-dark",
-                                    (int)EstadoAsiento.Aprobado => "bg-success",
+                                    (int)EstadoAsiento.Borrador => "bg-secondary",            
+                                    (int)EstadoAsiento.PendienteAprobar => "bg-info text-dark", 
+                                    (int)EstadoAsiento.Aprobado => "bg-success",            
+                                    (int)EstadoAsiento.Rechazado => "bg-warning text-dark", 
+                                    (int)EstadoAsiento.Anulado => "bg-danger",            
                                     _ => "bg-light text-dark border"
                                 };
-                                string nombreEstado = a.IdEstadoAsiento == (int)EstadoAsiento.PendienteAprobar ? "Pendiente de Aprobar" : a.EstadoNombre;
+
+                                string nombreEstado = a.EstadoNombre;
                             }
                             <span class="badge @badgeClass">@nombreEstado</span>
                         </td>
@@ -133,6 +138,13 @@
                                     <tbody id="detalle-@a.IdAsiento">
                                         <tr><td colspan="4" class="text-center">Cargando...</td></tr>
                                     </tbody>
+                                    <tfoot id="footer-@a.IdAsiento" class="table-secondary d-none">
+                                        <tr class="fw-bold">
+                                            <td colspan="2" class="text-end">TOTALES:</td>
+                                            <td class="text-end" id="sumas-@a.IdAsiento"></td>
+                                            <td id="balance-@a.IdAsiento" class="text-start"></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </td>
@@ -161,40 +173,72 @@
     <script>
         async function cargarDetalle(idAsiento) {
             const contenedor = document.getElementById(`detalle-${idAsiento}`);
+            const footer = document.getElementById(`footer-${idAsiento}`);
+            const sumas = document.getElementById(`sumas-${idAsiento}`);
+            const balance = document.getElementById(`balance-${idAsiento}`);
 
-            // Evitar recargar si ya tiene datos
             if (contenedor.innerHTML.trim() !== "" && !contenedor.innerHTML.includes("Cargando...")) {
                 return;
             }
 
             try {
-                // Llamada al handler OnGetDetalleAsync definido en el PageModel
                 const response = await fetch(`?handler=Detalle&idAsiento=${idAsiento}`);
                 const data = await response.json();
-
-                // IMPORTANTE: Ajustamos 'data.lineas' según la estructura de tu DTO
-                // Si tu servicio devuelve directamente la lista, usa 'data.forEach'
                 const lineas = data.lineas || data;
 
                 if (Array.isArray(lineas) && lineas.length > 0) {
                     let html = "";
+                    let totalDebito = 0;
+                    let totalCredito = 0;
+
                     lineas.forEach(linea => {
-                        const badgeColor = (linea.tipoMovimiento === 'Debe' || linea.tipo === 'Debe') ? 'bg-primary' : 'bg-info text-dark';
-                        const montoFormateado = new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' }).format(linea.monto);
+                        const tipo = (linea.tipoMovimiento || linea.tipo || "").trim();
+                        const monto = linea.monto || 0;
+
+                        if (tipo.toLowerCase().startsWith('d')) {
+                            totalDebito += monto;
+                        } else {
+                            totalCredito += monto;
+                        }
+
+                        const badgeColor = tipo.toLowerCase().startsWith('d') ? 'bg-primary' : 'bg-info text-dark';
+                        const montoFormateado = new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' }).format(monto);
 
                         html += `
                             <tr>
                                 <td>${linea.nombreCuenta || linea.cuenta}</td>
                                 <td class="text-center">
-                                    <span class="badge ${badgeColor}">${linea.tipoMovimiento || linea.tipo}</span>
+                                    <span class="badge ${badgeColor}">${tipo}</span>
                                 </td>
-                                <td class="text-end">${montoFormateado}</td>
+                                <td class="text-end font-monospace">${montoFormateado}</td>
                                 <td>${linea.glosa || linea.descripcion || ''}</td>
                             </tr>`;
                     });
+
                     contenedor.innerHTML = html;
+
+                    if (footer) {
+                        footer.classList.remove('d-none');
+                        const fmt = new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' });
+
+                        sumas.innerHTML = `
+                            <div class="text-end text-nowrap">
+                                <small class="fw-normal">D:</small> ${fmt.format(totalDebito)}<br>
+                                <small class="fw-normal">C:</small> ${fmt.format(totalCredito)}
+                            </div>`;
+
+                        const diferencia = Math.abs(totalDebito - totalCredito);
+                        if (diferencia < 0.01 && totalDebito > 0) {
+                            balance.innerHTML = '<span class="badge bg-success w-100"><i class="bi bi-check-circle"></i> Balanceado</span>';
+                        } else {
+                            balance.innerHTML = `
+                                <span class="badge bg-danger w-100"><i class="bi bi-exclamation-triangle"></i> Descuadrado</span>
+                                <small class="d-block text-center text-danger fw-bold mt-1">Dif: ${fmt.format(diferencia)}</small>`;
+                        }
+                    }
                 } else {
                     contenedor.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay movimientos registrados.</td></tr>';
+                    if (footer) footer.classList.add('d-none');
                 }
             } catch (error) {
                 console.error("Error:", error);
