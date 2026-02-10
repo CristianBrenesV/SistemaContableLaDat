@@ -12,11 +12,15 @@
     <form method="post" id="asientoForm">
         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-        <!-- ENCABEZADO -->
         <div class="row mb-3">
-            <div class="col-md-3">
+            <div class="col-md-2">
+                <label class="form-label fw-bold text-muted">Consecutivo</label>
+                <input type="text" class="form-control bg-light" asp-for="Encabezado.Consecutivo" readonly />
+            </div>
+
+            <div class="col-md-2">
                 <label class="form-label fw-bold">Código</label>
-                <input asp-for="Encabezado.Codigo" class="form-control" required />
+                <input asp-for="Encabezado.Codigo" class="form-control" required readonly />
             </div>
 
             <div class="col-md-3">
@@ -24,7 +28,7 @@
                 <input asp-for="Encabezado.Fecha" type="date" class="form-control" required />
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-5">
                 <label class="form-label fw-bold">Referencia</label>
                 <input asp-for="Encabezado.Referencia" class="form-control" required />
             </div>

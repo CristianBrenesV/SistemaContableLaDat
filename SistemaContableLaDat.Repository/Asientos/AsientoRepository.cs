@@ -46,7 +46,7 @@ namespace SistemaContableLaDat.Repository.Asientos
         {
             using var cn = _connectionFactory.CreateConnection();
             return cn.QueryFirstOrDefault<AsientoEncabezadoEntity>(
-                "sp_asiento_obtener_por_id",  // CAMBIADO A SP
+                "sp_asiento_obtener_por_id", 
                 new { p_id_asiento = idAsiento },
                 commandType: CommandType.StoredProcedure
             );
@@ -61,6 +61,7 @@ namespace SistemaContableLaDat.Repository.Asientos
             p.Add("p_id_usuario", e.IdUsuario);
             p.Add("p_fecha", e.Fecha);
             p.Add("p_codigo", e.Codigo);
+            p.Add("p_consecutivo", e.Consecutivo); 
             p.Add("p_referencia", e.Referencia);
             p.Add("p_id_estado", e.IdEstadoAsiento);
             p.Add("p_id_asiento", dbType: DbType.Int32, direction: ParameterDirection.Output);
@@ -96,7 +97,7 @@ namespace SistemaContableLaDat.Repository.Asientos
         {
             using var cn = _connectionFactory.CreateConnection();
             cn.Execute(
-                "sp_asiento_actualizar_encabezado",  // CAMBIADO A SP
+                "sp_asiento_actualizar_encabezado", 
                 new
                 {
                     p_id_asiento = a.IdAsiento,
@@ -114,7 +115,7 @@ namespace SistemaContableLaDat.Repository.Asientos
         {
             using var cn = _connectionFactory.CreateConnection();
             return cn.Query<AsientoDetalleEntity>(
-                "sp_asiento_obtener_detalles",  // CAMBIADO A SP
+                "sp_asiento_obtener_detalles", 
                 new { p_id_asiento = idAsiento },
                 commandType: CommandType.StoredProcedure
             );
@@ -124,7 +125,7 @@ namespace SistemaContableLaDat.Repository.Asientos
         {
             using var cn = _connectionFactory.CreateConnection();
             cn.Execute(
-                "sp_asiento_eliminar_detalles",  // CAMBIADO A SP
+                "sp_asiento_eliminar_detalles",  
                 new { p_id_asiento = idAsiento },
                 commandType: CommandType.StoredProcedure
             );
@@ -138,7 +139,7 @@ namespace SistemaContableLaDat.Repository.Asientos
             parameters.Add("p_tiene_relaciones", dbType: DbType.Boolean, direction: ParameterDirection.Output);
 
             cn.Execute(
-                "sp_asiento_tiene_relaciones",  // CAMBIADO A SP
+                "sp_asiento_tiene_relaciones", 
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
@@ -160,12 +161,11 @@ namespace SistemaContableLaDat.Repository.Asientos
         {
             using var cn = _connectionFactory.CreateConnection();
             return await cn.QueryAsync<CuentaComboDto>(
-                "sp_cuentas_listar_para_combo",  // CAMBIADO A SP
+                "sp_cuentas_listar_para_combo", 
                 commandType: CommandType.StoredProcedure
             );
         }
 
-        // NUEVOS MÉTODOS PARA APROBACIÓN (ya en SP)
         public async Task<IEnumerable<AsientoListadoDtoExtendido>> ListarConFiltroAsync(AsientoFiltroDto filtro)
         {
             using var cn = _connectionFactory.CreateConnection();
@@ -192,7 +192,7 @@ namespace SistemaContableLaDat.Repository.Asientos
 
             var parameters = new
             {
-                p_id_periodo = filtro.IdPeriodo,  // Ahora puede ser NULL
+                p_id_periodo = filtro.IdPeriodo, 
                 p_id_estado = filtro.IdEstado
             };
 
@@ -235,7 +235,6 @@ namespace SistemaContableLaDat.Repository.Asientos
 
             if (asiento != null)
             {
-                // Obtener detalles también por SP
                 asiento.Detalles = (await ObtenerDetallesPorAsientoAsync(idAsiento)).ToList();
             }
 
@@ -260,5 +259,11 @@ namespace SistemaContableLaDat.Repository.Asientos
                 commandType: CommandType.StoredProcedure
             );
         }
+        public async Task<int> ObtenerSiguienteConsecutivoAsync()
+        {
+            using var cn = _connectionFactory.CreateConnection();
+            return await cn.QuerySingleAsync<int>("CALL sp_Asiento_ObtenerSiguienteConsecutivo()");
+        }
+
     }
 }
