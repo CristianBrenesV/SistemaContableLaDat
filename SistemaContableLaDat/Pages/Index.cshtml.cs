@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication;
+Ôªøusing Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -56,7 +56,7 @@ namespace SistemaContableLaDat.Pages
 
             await _bitacoraService.RegistrarAccionAsync(
                 usuario.IdUsuario,
-                "Inicio de sesiÛn",
+                "Inicio de sesi√≥n",
                 new
                 {
                     usuario.NombreUsuario,
@@ -73,7 +73,7 @@ namespace SistemaContableLaDat.Pages
 
             if (!User.Identity.IsAuthenticated && !string.IsNullOrEmpty(returnUrl))
             {
-                MensajeInfo = "Por favor inicie sesiÛn para utilizar el sistema.";
+                MensajeInfo = "Por favor inicie sesi√≥n para utilizar el sistema.";
 
                 try
                 {
@@ -91,7 +91,7 @@ namespace SistemaContableLaDat.Pages
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[Bit·cora] Error al registrar: {ex.Message}");
+                    Console.WriteLine($"[Bit√°cora] Error al registrar: {ex.Message}");
                 }
             }
         }
