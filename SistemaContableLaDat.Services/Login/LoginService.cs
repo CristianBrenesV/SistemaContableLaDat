@@ -29,7 +29,7 @@ namespace SistemaContableLaDat.Service.Login
 
                 // 🔒 Si está bloqueado
                 if (usuarioDb.Estado == EstadoUsuario.Bloqueado)
-                    return new LoginResult { Exito = false, Mensaje = "Usuario bloqueado por múltiples intentos fallidos." };
+                    return new LoginResult { Exito = false, Mensaje = "Usuario y/o clave incorrectos." };
 
                 if (usuarioDb.ClaveCifrada == null || usuarioDb.Nonce == null || usuarioDb.TagAutenticacion == null)
                     return new LoginResult { Exito = false, Mensaje = "Datos de autenticación incompletos." };

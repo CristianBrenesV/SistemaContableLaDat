@@ -27,7 +27,6 @@ namespace SistemaContableLaDat.Repository.Login
                 var parameters = new DynamicParameters();
                 parameters.Add("@pI_usuario", nombreUsuario, DbType.String, ParameterDirection.Input);
 
-                // Ahora usamos QueryFirstOrDefault porque el SP devuelve un SELECT
                 var usuario = connection.QueryFirstOrDefault<UsuarioEntity>(
                     "sp_VerificarCredencial",
                     parameters,

@@ -2,12 +2,6 @@
   "profiles": {
     "SistemaContableLaDat.Entities": {
       "commandName": "Project"
-    },
-    "Perfil 1": {
-      "commandName": "Project",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
     }
   }
 }
