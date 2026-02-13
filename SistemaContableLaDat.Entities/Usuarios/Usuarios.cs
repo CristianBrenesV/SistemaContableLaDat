@@ -1,14 +1,16 @@
-﻿using System;
+﻿using SistemaContableLaDat.Entities.Roles;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace SistemaContableLaDat.Entities.Usuarios
 {
     public class UsuarioEntity
     {
-        public string IdUsuario { get; set; } = string.Empty;  // id_usuario
+        public int IdUsuario { get; set; }   // id_usuario
         public string Usuario { get; set; } = string.Empty;
         public string NombreUsuario { get; set; } = string.Empty;
         public string ApellidoUsuario { get; set; } = string.Empty;
@@ -27,5 +29,9 @@ namespace SistemaContableLaDat.Entities.Usuarios
 
         // Campo adicional del SP (no pertenece a la tabla)
         public int Encontrado { get; set; }
+
+        // Aquí va el rol
+        public string Roles { get; set; } = string.Empty;
+
     }
 }

@@ -1,0 +1,58 @@
+﻿@page
+@model SistemaContableLaDat.Pages.Pantallas.IndexModel
+@{
+    ViewData["Title"] = "Administración de Pantallas";
+    Layout = "_PrincipalLayout";
+}
+<h1 class="mt-4">Administración de Pantallas</h1>
+<p>
+    <a class="btn btn-dark" asp-page="Crear">
+        <i class="bi bi-plus-circle"></i> Nuevo
+    </a>
+</p>
+
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th style="white-space: nowrap;">Nombre</th>
+                <th style="white-space: nowrap;">Descripcion</th>
+                <th style="white-space: nowrap;">Ruta</th>
+                <th style="white-space: nowrap;">Estado</th>
+                <th style="white-space: nowrap;">Acciones</th>
+            </tr>
+        </thead>
+
+
+    </table>
+</div>
+
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-dark" role="alert">
+        @TempData["Mensaje"]
+    </div>
+}
+
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Eliminar">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEliminarLabel">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Realmente desea eliminar el elemento seleccionado: <strong id="nombreUsuario"></strong>?
+                </div>
+                <input type="hidden" name="id_usuario" id="usuarioIdEliminar" />
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="submit" class="btn btn-dark">Sí, eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

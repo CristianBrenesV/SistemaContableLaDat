@@ -1,0 +1,98 @@
+﻿@page
+@model SistemaContableLaDat.Pages.Roles.IndexModel
+@{
+    ViewData["Title"] = "Administración de Roles";
+    Layout = "_PrincipalLayout";
+}
+<h1 class="mt-4">Administración de Roles</h1>
+<p>
+    <a class="btn btn-dark" asp-page="Crear">
+        <i class="bi bi-plus-circle"></i> Nuevo
+    </a>
+</p>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <tbody>
+        <thead class="table-dark">
+            <tr>
+                <th style="white-space: nowrap;">ID</th>
+                <th style="white-space: nowrap;">Nombre del rol</th>
+                <th style="white-space: nowrap;">Descripcion</th>
+                <th style="white-space: nowrap;">Estado</th>
+                <th style="white-space: nowrap;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Roles.Count; i++)
+            {
+                <tr>
+                    <td style="white-space: nowrap;">@Model.Roles[i].IdRol</td>
+                    <td style="white-space: nowrap;">@Model.Roles[i].NombreRol</td>
+                    <th style="white-space: nowrap;">@Model.Roles[i].Descripcion</th>
+                    <td>
+                    <form method="post" asp-page-handler="CambiarEstado" class="d-inline">
+                        <input type="hidden" name="IdUsuario" value="@Model.Roles[i].IdRol" />
+                        <select name="NuevoEstado" class="form-select form-select-sm"
+                                onchange="this.form.submit()">
+                            @foreach (var estado in Enum.GetValues(typeof(SistemaContableLaDat.Entities.Usuarios.EstadoUsuario)))
+                            {
+                                <option value="@estado"
+                                        selected="@(estado.ToString() == Model.Roles[i].Estado ? "selected" : null)">
+                                    @estado
+                                </option>
+                            }
+                        </select>
+                    </form>
+                    <td style="white-space: nowrap;">
+                        <a class="btn btn-sm btn-outline-dark"
+                           asp-page="Editar"
+                           asp-route-IdRol="@Model.Roles[i].IdRol">
+                            <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+
+
+                        <button type="button"
+                                class="btn btn-sm btn-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalEliminar"
+                                data-id="@Model.Roles[i].IdRol"
+                                data-nombre="@Model.Roles[i].IdRol">
+                            <i class="bi bi-trash3"></i> Eliminar
+                        </button>
+
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-dark" role="alert">
+        @TempData["Mensaje"]
+    </div>
+}
+
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Eliminar">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEliminarLabel">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Realmente desea eliminar el elemento seleccionado: <strong id="nombreUsuario"></strong>?
+                </div>
+                <input type="hidden" name="id_usuario" id="usuarioIdEliminar" />
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="submit" class="btn btn-dark">Sí, eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,63 @@
+﻿@page
+@model SistemaContableLaDat.Pages.Usuarios.CambiarClaveModel
+@{
+    ViewData["Title"] = "Cambio de clave";
+    Layout = "_PrincipalLayout";
+}
+
+<h1 class="mt-4">Cambiar Contraseña</h1>
+
+<a asp-page="/Usuarios/Index" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Regresar
+</a>
+
+<button type="submit" class="btn btn-dark" form="formCambiarClave" asp-page-handler="Aceptar" onclick="return validarClave()">
+    <i class="bi bi-save"></i> Aceptar
+</button>
+
+<button type="button" class="btn btn-secondary" onclick="autogenerarClave()">
+    <i class="bi bi-key"></i> Autogenerar
+</button>
+
+
+<div class="container mt-5 d-flex">
+    <div class="card shadow-sm border-0 w-50" style="background-color: #d9d9d9;">
+        <div class="card-body">
+
+            <form id="formCambiarClave" method="post">
+
+                <div class="mb-3">
+                    <label asp-for="Input.IdUsuario" class="form-label"><strong>Id Usuario</strong></label>
+                    <input asp-for="Input.IdUsuario" class="form-control" readonly />
+                    <span asp-validation-for="Input.IdUsuario" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.NuevaClave" class="form-label"><strong>Nueva Contraseña</strong></label>
+                    <div class="input-group">
+                        <input asp-for="Input.NuevaClave" class="form-control" type="password" id="Input_NuevaClave" />
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('Input_NuevaClave')">
+                            <i class="bi bi-eye" id="icon_Input_NuevaClave"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Input.NuevaClave" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.ConfirmarClave" class="form-label"><strong>Confirmar Contraseña</strong></label>
+                    <div class="input-group">
+                        <input asp-for="Input.ConfirmarClave" class="form-control" type="password" id="Input_ConfirmarClave" />
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('Input_ConfirmarClave')">
+                            <i class="bi bi-eye" id="icon_Input_ConfirmarClave"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Input.ConfirmarClave" class="text-danger"></span>
+                </div>
+
+
+            </form>
+
+        </div>
+    </div>
+</div>
+<script src="~/js/cambioClave.js"></script>

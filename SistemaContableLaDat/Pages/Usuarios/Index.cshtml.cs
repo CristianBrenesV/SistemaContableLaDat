@@ -25,6 +25,16 @@ namespace SistemaContableLaDat.Pages.Usuarios
 
         private const int TamanoPagina = 10;
 
+        private int? ObtenerIdUsuarioLogueado()
+        {
+            var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (int.TryParse(claim, out var IdUsuario))
+                return IdUsuario;
+
+            return null;
+        }
+
         public async Task<IActionResult> OnGetAsync(int pagina = 1)
         {
             var usuariosEntidad = await _usuarioService.GetUsuariosPaginadosAsync(pagina, TamanoPagina);
@@ -40,16 +50,16 @@ namespace SistemaContableLaDat.Pages.Usuarios
                 NombreUsuario = u.NombreUsuario,
                 ApellidoUsuario = u.ApellidoUsuario,
                 CorreoElectronico = u.CorreoElectronico,
-                Estado = u.Estado.ToString()
+                Estado = u.Estado.ToString(),
+                Roles = u.Roles
             }).ToList();
 
-            // Registrar bitácora
-            var idUsuarioEjecutor = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var idUsuario = ObtenerIdUsuarioLogueado();
 
-            if (!string.IsNullOrEmpty(idUsuarioEjecutor))
+            if (idUsuario.HasValue)
             {
-                await _bitacoraService.RegistrarAccionAsync(
-                    idUsuarioEjecutor,
+                await _bitacoraService.RegistrarConsultaAsync(
+                    idUsuario.Value,
                     "Consulta paginada de usuarios",
                     new { Pagina = pagina, UsuariosMostrados = Usuarios.Count }
                 );
@@ -58,16 +68,16 @@ namespace SistemaContableLaDat.Pages.Usuarios
             return Page();
         }
 
-        public async Task<IActionResult> OnPostEliminarAsync(string id_usuario)
+        public async Task<IActionResult> OnPostEliminarAsync(int IdUsuario)
         {
-            var idUsuarioEjecutor = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(idUsuarioEjecutor))
+            var idUsuario = ObtenerIdUsuarioLogueado();
+            if (!idUsuario.HasValue)
             {
                 TempData["Mensaje"] = "No se pudo obtener el usuario autenticado.";
                 return RedirectToPage();
             }
 
-            int resultado = await _usuarioService.DeleteAsync(id_usuario, idUsuarioEjecutor);
+            int resultado = await _usuarioService.DeleteAsync(IdUsuario);
 
             TempData["Mensaje"] = resultado == 1
                 ? "Usuario eliminado correctamente."
@@ -76,60 +86,39 @@ namespace SistemaContableLaDat.Pages.Usuarios
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostCambiarEstadoAsync(string id_usuario, string nuevo_estado)
+        public async Task<IActionResult> OnPostCambiarEstadoAsync(int IdUsuario, string NuevoEstado)
         {
-            if (string.IsNullOrWhiteSpace(id_usuario) || string.IsNullOrWhiteSpace(nuevo_estado))
+            if (string.IsNullOrWhiteSpace(NuevoEstado))
             {
                 TempData["Mensaje"] = "Datos incompletos para cambiar el estado.";
                 return RedirectToPage();
             }
 
-            var usuario = await _usuarioService.GetByIdAsync(id_usuario);
+            var usuario = await _usuarioService.GetByIdAsync(IdUsuario);
             if (usuario == null)
             {
                 TempData["Mensaje"] = "Usuario no encontrado.";
                 return RedirectToPage();
             }
 
-            if (!Enum.TryParse<EstadoUsuario>(nuevo_estado, out var estadoConvertido))
+            if (!Enum.TryParse<EstadoUsuario>(NuevoEstado, out var estadoConvertido))
             {
                 TempData["Mensaje"] = "Estado no válido.";
                 return RedirectToPage();
             }
 
-            var estadoAnterior = usuario.Estado;
-            usuario.Estado = estadoConvertido;
-
-            var idUsuarioEjecutor = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(idUsuarioEjecutor))
+            var idUsuario = ObtenerIdUsuarioLogueado();
+            if (!idUsuario.HasValue)
             {
                 TempData["Mensaje"] = "No se pudo obtener el ID del usuario autenticado.";
                 return RedirectToPage();
             }
 
-            var actualizado = await _usuarioService.UpdateAsync(usuario, idUsuarioEjecutor);
+            var actualizado = await _usuarioService.CambiarEstadoAsync(IdUsuario, NuevoEstado);
 
-            if (actualizado == 1)
-            {
-                await _bitacoraService.RegistrarAccionAsync(
-                    idUsuarioEjecutor,
-                    $"Cambio de estado de usuario",
-                    new
-                    {
-                        Id_Usuario = usuario.IdUsuario,
-                        Nombre_Usuario = usuario.NombreUsuario,
-                        Apellido_Usuario = usuario.ApellidoUsuario,
-                        Estado_Anterior = estadoAnterior.ToString(),
-                        Estado_Nuevo = nuevo_estado
-                    }
-                );
-                TempData["Mensaje"] = $"Estado cambiado a {nuevo_estado}.";
-            }
-            else
-            {
-                TempData["Mensaje"] = "Error al cambiar el estado.";
-            }
+            TempData["Mensaje"] = actualizado == 1
+                ? $"Estado cambiado a {NuevoEstado}."
+                : "Error al cambiar el estado.";
 
             return RedirectToPage();
         }

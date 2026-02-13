@@ -14,11 +14,7 @@ namespace SistemaContableLaDat.Service.Bitacora
             _repository = repository;
         }
 
-        public async Task<bool> RegistrarCreacionAsync(
-            string idUsuario,
-            string elemento,
-            object datosNuevos,
-            string? idSolicitud = null)
+        public async Task<bool> RegistrarCreacionAsync(int idUsuario, string elemento, object datosNuevos)
         {
             var accion = new BitacoraAccion
             {
@@ -29,22 +25,10 @@ namespace SistemaContableLaDat.Service.Bitacora
             };
 
             string descripcion = $"Creación de {elemento}";
-            string accionesJson = JsonSerializer.Serialize(accion.Datos);
-
-            return await _repository.RegistrarAccionAsync(
-                idUsuario,
-                descripcion,
-                accionesJson,
-                idSolicitud
-            );
+            return await _repository.RegistrarAccionAsync(idUsuario, descripcion, accion);
         }
 
-        public async Task<bool> RegistrarActualizacionAsync(
-            string idUsuario,
-            string elemento,
-            object datosAnteriores,
-            object datosNuevos,
-            string? idSolicitud = null)
+        public async Task<bool> RegistrarActualizacionAsync(int idUsuario, string elemento, object datosAnteriores, object datosNuevos)
         {
             var actualizacion = new BitacoraActualizacion
             {
@@ -61,21 +45,10 @@ namespace SistemaContableLaDat.Service.Bitacora
             };
 
             string descripcion = $"Actualización de {elemento}";
-            string accionesJson = JsonSerializer.Serialize(accion.Datos);
-
-            return await _repository.RegistrarAccionAsync(
-                idUsuario,
-                descripcion,
-                accionesJson,
-                idSolicitud
-            );
+            return await _repository.RegistrarAccionAsync(idUsuario, descripcion, accion);
         }
 
-        public async Task<bool> RegistrarEliminacionAsync(
-            string idUsuario,
-            string elemento,
-            object datosEliminados,
-            string? idSolicitud = null)
+        public async Task<bool> RegistrarEliminacionAsync(int idUsuario, string elemento, object datosEliminados)
         {
             var accion = new BitacoraAccion
             {
@@ -86,71 +59,32 @@ namespace SistemaContableLaDat.Service.Bitacora
             };
 
             string descripcion = $"Eliminación de {elemento}";
-            string accionesJson = JsonSerializer.Serialize(accion.Datos);
-
-            return await _repository.RegistrarAccionAsync(
-                idUsuario,
-                descripcion,
-                accionesJson,
-                idSolicitud
-            );
+            return await _repository.RegistrarAccionAsync(idUsuario, descripcion, accion);
         }
 
-        public async Task<bool> RegistrarConsultaAsync(
-            string idUsuario,
-            string elemento,
-            object? filtros = null,
-            string? idSolicitud = null)
+        public async Task<bool> RegistrarConsultaAsync(int idUsuario, string elemento, object? filtros = null)
         {
             var accion = new BitacoraAccion
             {
                 TipoAccion = "CONSULTAR",
                 Elemento = elemento,
-                Datos = filtros,
+                Datos = filtros ?? new { },
                 Fecha = DateTime.Now
             };
 
-            string descripcion = $"El usuario consulta {elemento}";
-            string accionesJson = filtros != null
-                ? JsonSerializer.Serialize(accion.Datos)
-                : "{}";
-
-            return await _repository.RegistrarAccionAsync(
-                idUsuario,
-                descripcion,
-                accionesJson,
-                idSolicitud
-            );
+            string descripcion = $"Consulta de {elemento}";
+            return await _repository.RegistrarAccionAsync(idUsuario, descripcion, accion);
         }
 
-        // Mantener compatibilidad con el método antiguo
-        public async Task<bool> RegistrarAccionAsync(
-            string idUsuario,
-            string descripcion,
-            object accionesJson,
-            string? idSolicitud = null)
+        public async Task<bool> RegistrarAccionAsync(int idUsuario, string descripcion, object accionesJson)
         {
-            // Serializar si es un objeto
-            string json = accionesJson is string str ? str : JsonSerializer.Serialize(accionesJson);
-
-            return await _repository.RegistrarAccionAsync(
-                idUsuario,
-                descripcion,
-                json,
-                idSolicitud
-            );
+            return await _repository.RegistrarAccionAsync(idUsuario, descripcion, accionesJson);
         }
 
-        public async Task<bool> RegistrarErrorAsync(
-            string idUsuario,
-            string errorDetalle,
-            string? idSolicitud = null)
+        public async Task<bool> RegistrarErrorAsync(int idUsuario, string errorDetalle)
         {
-            return await _repository.RegistrarErrorAsync(
-                idUsuario,
-                errorDetalle,
-                idSolicitud
-            );
+            var detalle = new { error = errorDetalle };
+            return await _repository.RegistrarAccionAsync(idUsuario, "Error técnico", detalle);
         }
     }
 }
