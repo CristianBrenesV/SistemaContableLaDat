@@ -31,7 +31,7 @@ namespace SistemaContableLaDat.Repository.Usuarios
             }
         }
 
-        public async Task<UsuarioEntity?> GetByIdAsync(string id)
+        public async Task<UsuarioEntity?> GetByIdAsync(int id)
         {
             try
             {
@@ -66,18 +66,23 @@ namespace SistemaContableLaDat.Repository.Usuarios
                 parametros.Add("pI_tag", usuario.TagAutenticacion, DbType.Binary);
                 parametros.Add("pI_nonce", usuario.Nonce, DbType.Binary);
                 parametros.Add("pI_estado", usuario.Estado.ToString());
+
                 parametros.Add("pS_resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);
+                parametros.Add("pS_idUsuario", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                 await connection.ExecuteAsync("sp_UsuariosInsertar", parametros, commandType: CommandType.StoredProcedure);
 
-                return parametros.Get<int>("pS_resultado"); // 1 si éxito, 0 si error
+                usuario.IdUsuario = parametros.Get<int>("pS_idUsuario");// Guarda el ID generado en el objeto
+
+                return parametros.Get<int>("pS_resultado");// Retorna 1 si éxito
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error en InsertAsync: {ex.Message}");
-                return 0; // Retorna `0` en caso de error
+                return 0;
             }
         }
+
 
         public async Task<int> UpdateAsync(UsuarioEntity usuario)
         {
@@ -86,34 +91,37 @@ namespace SistemaContableLaDat.Repository.Usuarios
                 using var connection = _dbConnectionFactory.CreateConnection();
                 var parametros = new DynamicParameters();
 
+                parametros.Add("pI_id_usuario", usuario.IdUsuario);       
                 parametros.Add("pI_usuario", usuario.Usuario);
-                parametros.Add("pI_clave_cifrada", usuario.ClaveCifrada, DbType.Binary);
                 parametros.Add("pI_nombre_usuario", usuario.NombreUsuario);
                 parametros.Add("pI_apellido_usuario", usuario.ApellidoUsuario);
                 parametros.Add("pI_correo_electronico", usuario.CorreoElectronico);
-                parametros.Add("pI_tag", usuario.TagAutenticacion, DbType.Binary);
-                parametros.Add("pI_nonce", usuario.Nonce, DbType.Binary);
                 parametros.Add("pI_estado", usuario.Estado.ToString());
+
                 parametros.Add("pS_resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);
+                parametros.Add("pS_idUsuario", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                 await connection.ExecuteAsync("sp_UsuariosActualizarPorIdUsuario", parametros, commandType: CommandType.StoredProcedure);
+
+                usuario.IdUsuario = parametros.Get<int>("pS_idUsuario"); 
 
                 return parametros.Get<int>("pS_resultado");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error en UpdateAsync: {ex.Message}");
-                return 0; // Retorna `0` en caso de error
+                return 0;
             }
         }
 
-        public async Task<int> DeleteAsync(string id_usuario)
+
+        public async Task<int> DeleteAsync(int idUsuario)
         {
             try
             {
                 using var connection = _dbConnectionFactory.CreateConnection();
                 var parameters = new DynamicParameters();
-                parameters.Add("pI_id_usuario", id_usuario);
+                parameters.Add("pI_id_usuario", idUsuario);
                 parameters.Add("pS_resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                 await connection.ExecuteAsync("eliminar_usuario_por_id", parameters, commandType: CommandType.StoredProcedure);
@@ -150,7 +158,31 @@ namespace SistemaContableLaDat.Repository.Usuarios
                 "sp_UsuariosConteo"
             );
         }
+        public async Task<int> CambiarClaveAsync(int idUsuario, byte[] claveCifrada, byte[] tag, byte[] nonce)
+        {
+            using var connection = _dbConnectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_IdUsuario", idUsuario);
+            parameters.Add("p_ClaveCifrada", claveCifrada, DbType.Binary);
+            parameters.Add("p_Tag", tag, DbType.Binary);
+            parameters.Add("p_Nonce", nonce, DbType.Binary);
 
+            return await connection.ExecuteAsync("sp_CambiarClaveUsuario", parameters, commandType: CommandType.StoredProcedure);
+        }
+        public async Task<int> CambiarEstadoAsync(int idUsuario, string nuevoEstado)
+        {
+            using var connection = _dbConnectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+
+            parameters.Add("p_IdUsuario", idUsuario, DbType.Int32);
+            parameters.Add("p_NuevoEstado", nuevoEstado, DbType.String);
+
+            return await connection.ExecuteAsync(
+                "sp_CambiarEstadoUsuario",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
     }
 }
 

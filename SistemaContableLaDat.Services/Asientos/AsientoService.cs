@@ -22,7 +22,7 @@ namespace SistemaContableLaDat.Service.Asientos
         public async Task<IEnumerable<AsientoListadoDto>> ListarPorPeriodoAsync(int idPeriodo, int idUsuario, int? idEstado = null)
         {
             await _bitacora.RegistrarConsultaAsync(
-                idUsuario.ToString(),
+                idUsuario,
                 "Asientos por Periodo",
                 new
                 {
@@ -68,7 +68,7 @@ namespace SistemaContableLaDat.Service.Asientos
             }
 
             await _bitacora.RegistrarCreacionAsync(
-                idUsuario.ToString(),
+                idUsuario,
                 "Asiento Contable",
                 new
                 {
@@ -93,12 +93,10 @@ namespace SistemaContableLaDat.Service.Asientos
             var actual = _repo.ObtenerPorId(encabezado.IdAsiento)
                 ?? throw new Exception("El asiento no existe.");
 
-            // Validar que el estado permita edición
             if (actual.IdEstadoAsiento == (int)EstadoAsiento.Aprobado ||
                 actual.IdEstadoAsiento == (int)EstadoAsiento.Anulado)
                 throw new Exception($"No se puede editar un asiento en estado {actual.EstadoNombre}");
 
-            // Captura de estado anterior para la bitácora
             var detallesAnteriores = _repo.ObtenerDetallesPorAsiento(encabezado.IdAsiento);
 
             decimal debe = detalles.Where(d => d.TipoMovimiento == "D").Sum(d => d.Monto);
@@ -111,7 +109,7 @@ namespace SistemaContableLaDat.Service.Asientos
             using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
             _repo.ActualizarEncabezado(encabezado);
-            _repo.EliminarDetalles(encabezado.IdAsiento); 
+            _repo.EliminarDetalles(encabezado.IdAsiento);
 
             foreach (var d in detalles)
             {
@@ -120,7 +118,7 @@ namespace SistemaContableLaDat.Service.Asientos
             }
 
             await _bitacora.RegistrarActualizacionAsync(
-                idUsuario.ToString(),
+                idUsuario,
                 "Asiento Contable",
                 new { Antes = new { Encabezado = actual, Detalles = detallesAnteriores } },
                 new { Despues = new { Encabezado = encabezado, Detalles = detalles } }
@@ -157,7 +155,7 @@ namespace SistemaContableLaDat.Service.Asientos
             _repo.Anular(idAsiento);
 
             await _bitacora.RegistrarEliminacionAsync(
-                idUsuario.ToString(),
+                idUsuario,
                 "Asiento Contable",
                 new
                 {
@@ -191,7 +189,7 @@ namespace SistemaContableLaDat.Service.Asientos
             if (resultado)
             {
                 await _bitacora.RegistrarAccionAsync(
-                    idUsuario.ToString(),
+                    idUsuario,
                     "Cambio de Estado Asiento",
                     new { IdAsiento = idAsiento, De = asiento.IdEstadoAsiento, A = idEstadoNuevo }
                 );
@@ -270,10 +268,10 @@ namespace SistemaContableLaDat.Service.Asientos
         {
             return await _repo.ListarPeriodosParaComboAsync();
         }
+
         public async Task<int> ObtenerSiguienteConsecutivoAsync()
         {
             return await _repo.ObtenerSiguienteConsecutivoAsync();
         }
-
     }
 }

@@ -1,18 +1,14 @@
-﻿// SistemaContableLaDat.Service/Abstract/IBitacoraService.cs
-namespace SistemaContableLaDat.Service.Abstract
+﻿namespace SistemaContableLaDat.Service.Abstract
 {
     public interface IBitacoraService
     {
-        // Métodos específicos por tipo de acción
-        Task<bool> RegistrarCreacionAsync(string idUsuario, string elemento, object datosNuevos, string? idSolicitud = null);
-        Task<bool> RegistrarActualizacionAsync(string idUsuario, string elemento, object datosAnteriores, object datosNuevos, string? idSolicitud = null);
-        Task<bool> RegistrarEliminacionAsync(string idUsuario, string elemento, object datosEliminados, string? idSolicitud = null);
-        Task<bool> RegistrarConsultaAsync(string idUsuario, string elemento, object? filtros = null, string? idSolicitud = null);
+        Task<bool> RegistrarCreacionAsync(int idUsuario, string elemento, object datosNuevos);
+        Task<bool> RegistrarActualizacionAsync(int idUsuario, string elemento, object datosAnteriores, object datosNuevos);
+        Task<bool> RegistrarEliminacionAsync(int idUsuario, string elemento, object datosEliminados);
+        Task<bool> RegistrarConsultaAsync(int idUsuario, string elemento, object? filtros = null);
 
-        // Método genérico (mantener para compatibilidad)
-        Task<bool> RegistrarAccionAsync(string idUsuario, string descripcion, object accionesJson, string? idSolicitud = null);
+        Task<bool> RegistrarAccionAsync(int idUsuario, string descripcion, object accionesJson);
 
-        // Para errores
-        Task<bool> RegistrarErrorAsync(string idUsuario, string errorDetalle, string? idSolicitud = null);
+        Task<bool> RegistrarErrorAsync(int idUsuario, string errorDetalle);
     }
 }

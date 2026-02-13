@@ -5,8 +5,12 @@ using SistemaContableLaDat.Repository.Cierres;
 using SistemaContableLaDat.Repository.Cuentas;
 using SistemaContableLaDat.Repository.Infrastructure;
 using SistemaContableLaDat.Repository.Login;
+using SistemaContableLaDat.Repository.Pantallas;
 using SistemaContableLaDat.Repository.Periodos;
 using SistemaContableLaDat.Repository.Usuarios;
+using SistemaContableLaDat.Repository.Roles;
+using SistemaContableLaDat.Repository.RolesPantallas;
+using SistemaContableLaDat.Repository.UsuariosRoles;
 using SistemaContableLaDat.Service.Abstract;
 using SistemaContableLaDat.Service.Asientos;
 using SistemaContableLaDat.Service.Bitacora;
@@ -14,8 +18,12 @@ using SistemaContableLaDat.Service.Cierres;
 using SistemaContableLaDat.Service.Cuentas;
 using SistemaContableLaDat.Service.Encriptado;
 using SistemaContableLaDat.Service.Login;
+using SistemaContableLaDat.Service.Pantallas;
 using SistemaContableLaDat.Service.Periodos;
 using SistemaContableLaDat.Service.Seguridad;
+using SistemaContableLaDat.Service.Roles;
+using SistemaContableLaDat.Service.RolesPantallas;
+using SistemaContableLaDat.Service.UsuariosRoles;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +54,11 @@ builder.Services.AddScoped<LoginRepository>();
 builder.Services.AddScoped<BitacoraRepository>();
 builder.Services.AddScoped<AsientoRepository>();
 builder.Services.AddScoped<CuentaRepository>();
-builder.Services.AddScoped<PeriodoRepository>(); 
+builder.Services.AddScoped<PeriodoRepository>();
+builder.Services.AddScoped<RolRepository>();
+builder.Services.AddScoped<RolPantallaRepository>();
+builder.Services.AddScoped<UsuarioRolRepository>();
+builder.Services.AddScoped<PantallaRepository>();
 
 // 4. Servicios
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
@@ -55,6 +67,10 @@ builder.Services.AddScoped<ISeguridadService, SeguridadService>();
 builder.Services.AddScoped<CuentaService>();
 builder.Services.AddScoped<PeriodoService>();
 builder.Services.AddScoped<AsientoService>();
+builder.Services.AddScoped<IRolPantallaService, RolPantallaService>();
+builder.Services.AddScoped<IRolService, RolService>();
+builder.Services.AddScoped<IPantallaService, PantallaService>();
+builder.Services.AddScoped<IUsuarioRolService, UsuarioRolService>();
 
 builder.Services.AddScoped<CierreRepository>();
 builder.Services.AddScoped<ICierreService, CierreService>();

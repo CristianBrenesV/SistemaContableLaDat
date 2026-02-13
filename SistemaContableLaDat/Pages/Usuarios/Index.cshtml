@@ -7,7 +7,7 @@
 
 <h1 class="mt-4">Administración de Usuarios</h1>
 <p>
-    <a class="btn btn-dark" asp-page="AgregarUsuario">
+    <a class="btn btn-dark" asp-page="Crear">
         <i class="bi bi-plus-circle"></i> Nuevo
     </a>
 </p>
@@ -17,12 +17,13 @@
     <table class="table table-bordered table-striped">
         <thead class="table-dark">
             <tr>
-                <th style="white-space: nowrap;">Id Usuario</th>
+                <th style="white-space: nowrap;">ID</th>
                 <th style="white-space: nowrap;">Usuario</th>
                 <th style="white-space: nowrap;">Nombre</th>
                 <th style="white-space: nowrap;">Apellido</th>
                 <th style="white-space: nowrap;">Correo Electrónico</th>
                 <th style="white-space: nowrap;">Estado</th> 
+                <th style="white-space: nowrap;">Rol</th>
                 <th style="white-space: nowrap;">Acciones</th>
             </tr>
         </thead>
@@ -38,8 +39,8 @@
 
                     <td>
                         <form method="post" asp-page-handler="CambiarEstado" class="d-inline">
-                            <input type="hidden" name="id_usuario" value="@Model.Usuarios[i].IdUsuario" />
-                            <select name="nuevo_estado" class="form-select form-select-sm"
+                            <input type="hidden" name="IdUsuario" value="@Model.Usuarios[i].IdUsuario" />
+                            <select name="NuevoEstado" class="form-select form-select-sm"
                                     onchange="this.form.submit()">
                                 @foreach (var estado in Enum.GetValues(typeof(SistemaContableLaDat.Entities.Usuarios.EstadoUsuario)))
                                 {
@@ -50,23 +51,55 @@
                                 }
                             </select>
                         </form>
+                        @{
+                            var roles = Model.Usuarios[i].Roles.Split(", ");
+
+                            Func<string, string> badgeColor = (rol) =>
+                            {
+                                return rol switch
+                                {
+                                    "Administrador" => "badge bg-dark text-white",
+                                    "Contador" => "badge bg-secondary text-white",
+                                    "Contador Jefe" => "badge bg-light text-dark border",
+                                    _ => "badge bg-light text-dark border"
+                                };
+
+                            };
+                        }
+
+                    <td>
+                        <div class="d-flex flex-column gap-1">
+                            @foreach (var rol in roles)
+                            {
+                                <span class="badge @badgeColor(rol) rounded-pill px-3 py-2">@rol</span>
+                            }
+                        </div>
                     </td>
 
+
                     <td style="white-space: nowrap;">
-                        <a class="btn btn-sm btn-outline-secondary"
-                           asp-page="EditarUsuario"
-                           asp-route-id="@Model.Usuarios[i].IdUsuario">
+                        <a class="btn btn-sm btn-outline-dark"
+                           asp-page="Editar"
+                           asp-route-IdUsuario="@Model.Usuarios[i].IdUsuario">
                             <i class="bi bi-pencil-square"></i> Editar
                         </a>
 
+                        <a class="btn btn-sm btn-outline-secondary"
+                           asp-page="CambiarClave"
+                           asp-route-IdUsuario="@Model.Usuarios[i].IdUsuario">
+                            <i class="bi bi-lock"></i> Cambiar Clave
+                        </a>
+
+
                         <button type="button"
-                                class="btn btn-sm btn-dark"
+                                class="btn btn-sm btn-danger"
                                 data-bs-toggle="modal"
                                 data-bs-target="#modalEliminar"
                                 data-id="@Model.Usuarios[i].IdUsuario"
                                 data-nombre="@Model.Usuarios[i].Usuario">
                             <i class="bi bi-trash3"></i> Eliminar
                         </button>
+
                     </td>
                 </tr>
             }
