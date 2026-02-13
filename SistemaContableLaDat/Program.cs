@@ -81,7 +81,6 @@ builder.Services.AddScoped<EncriptadoService>();
 
 builder.Services.AddScoped<LoginService>();
 
-// 5. Autenticación
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", options =>
     {
@@ -92,7 +91,6 @@ builder.Services.AddAuthentication("Cookies")
 
 builder.Services.AddAuthorization();
 
-// --- CONSTRUCCIÓN DE LA APP ---
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
