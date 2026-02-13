@@ -9,7 +9,7 @@
         public string ApellidoUsuario { get; set; } = string.Empty;
 
         public string CorreoElectronico { get; set; } = string.Empty;
-        public string Estado { get; set; }  // o usar un enum si lo tenés mapeado
+        public string Estado { get; set; } 
         public string Roles { get; set; } = "";
 
     }

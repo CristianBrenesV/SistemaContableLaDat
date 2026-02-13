@@ -10,6 +10,5 @@ namespace SistemaContableLaDat.Entities.Roles
     {
         Activo,
         Inactivo, 
-        Bloqueado
     }
 }

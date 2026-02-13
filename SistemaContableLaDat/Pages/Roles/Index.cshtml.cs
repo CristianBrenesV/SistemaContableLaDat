@@ -61,5 +61,22 @@ namespace SistemaContableLaDat.Pages.Roles
 
             return Page();
         }
+        public async Task<IActionResult> OnPostEliminarAsync(string idRol, int IdUsuario)
+        {
+            var idUsuario = ObtenerIdUsuarioLogueado();
+            if (!idUsuario.HasValue)
+            {
+                TempData["Mensaje"] = "No se pudo obtener el rol autenticado.";
+                return RedirectToPage();
+            }
+
+            int resultado = await _rolService.DeleteAsync(idRol,IdUsuario);
+
+            TempData["Mensaje"] = resultado == 1
+                ? "Rol eliminado correctamente."
+                : "No se pudo eliminar el rol. Puede estar relacionado con otros registros.";
+
+            return RedirectToPage();
+        }
     }
 }

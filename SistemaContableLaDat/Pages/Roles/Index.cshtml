@@ -29,13 +29,13 @@
                 <tr>
                     <td style="white-space: nowrap;">@Model.Roles[i].IdRol</td>
                     <td style="white-space: nowrap;">@Model.Roles[i].NombreRol</td>
-                    <th style="white-space: nowrap;">@Model.Roles[i].Descripcion</th>
+                    <td style="white-space: nowrap;">@Model.Roles[i].Descripcion</td>
                     <td>
                     <form method="post" asp-page-handler="CambiarEstado" class="d-inline">
                         <input type="hidden" name="IdUsuario" value="@Model.Roles[i].IdRol" />
                         <select name="NuevoEstado" class="form-select form-select-sm"
                                 onchange="this.form.submit()">
-                            @foreach (var estado in Enum.GetValues(typeof(SistemaContableLaDat.Entities.Usuarios.EstadoUsuario)))
+                            @foreach (var estado in Enum.GetValues(typeof(SistemaContableLaDat.Entities.Roles.EstadoRol)))
                             {
                                 <option value="@estado"
                                         selected="@(estado.ToString() == Model.Roles[i].Estado ? "selected" : null)">
@@ -49,6 +49,12 @@
                            asp-page="Editar"
                            asp-route-IdRol="@Model.Roles[i].IdRol">
                             <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+
+                        <a class="btn btn-sm btn-outline-secondary"
+                           asp-page="Pantallas"
+                           asp-route-IdRol="@Model.Roles[i].IdRol">
+                            <i class="bi bi-window"></i> Pantallas
                         </a>
 
 

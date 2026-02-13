@@ -14,12 +14,11 @@
     <i class="bi bi-save"></i> Guardar
 </button>
 
-
 <div class="container mt-5 d-flex">
     <div class="card shadow-sm border-0 w-50" style="background-color: #d9d9d9;">
         <div class="card-body">
 
-            <form id="formEditarRol" method="post" onsubmit="return validarClave()">
+            <form id="formEditarRol" method="post">
 
                 <div class="mb-3">
                     <label asp-for="Rol.IdRol" class="form-label"><strong>Id Rol</strong></label>
@@ -33,6 +32,21 @@
                     <span asp-validation-for="Rol.NombreRol" class="text-danger"></span>
                 </div>
 
+                <div class="mb-3">
+                    <label asp-for="Rol.Descripcion" class="form-label"><strong>Descripcion</strong></label>
+                    <input asp-for="Rol.Descripcion" class="form-control" />
+                    <span asp-validation-for="Rol.Descripcion" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Rol.Estado" class="form-label"><strong>Estado</strong></label>
+                    <select asp-for="Rol.Estado" class="form-select">
+                        <option value="">-- Seleccione estado --</option>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                    <span asp-validation-for="Rol.Estado" class="text-danger"></span>
+                </div>
             </form>
 
         </div>

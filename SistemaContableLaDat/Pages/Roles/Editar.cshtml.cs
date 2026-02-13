@@ -36,7 +36,7 @@ namespace SistemaContableLaDat.Pages.Roles
                 IdRol = rolEntidad.IdRol,
                 NombreRol= rolEntidad.NombreRol,
                 Descripcion = rolEntidad.Descripcion,
-                Estado = rolEntidad.Estado.ToString(),
+                Estado = Enum.Parse<EstadoRol>(rolEntidad.Estado)
             };
 
             return Page();
@@ -71,8 +71,8 @@ namespace SistemaContableLaDat.Pages.Roles
             );
 
             TempData["Mensaje"] = actualizado == 1
-                ? "Usuario actualizado correctamente."
-                : "Error al actualizar el usuario.";
+                ? "Rol actualizado correctamente."
+                : "Error al actualizar el rol.";
 
             return RedirectToPage("Index");
         }

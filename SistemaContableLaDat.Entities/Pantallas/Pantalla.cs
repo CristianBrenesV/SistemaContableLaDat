@@ -12,6 +12,6 @@ namespace SistemaContableLaDat.Entities.Pantallas
         public string Nombre { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Ruta { get; set; } = string.Empty;
-        public string Estado { get; set; } = string.Empty; // "Activa" o "Inactiva"
+        public string Estado { get; set; } = string.Empty; 
     }
 }
