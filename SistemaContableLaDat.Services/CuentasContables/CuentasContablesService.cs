@@ -71,19 +71,19 @@ namespace SistemaContableLaDat.Service.CuentasContables
             try
             {
                 var cuentaAnterior = await _repository.GetByIdAsync(cuenta.IdCuenta);
+                if (cuentaAnterior == null)
+                {
+                    throw new Exception("La cuenta contable no existe.");
+                }
 
                 var resultado = await _repository.UpdateAsync(cuenta);
 
-                if (resultado == 1 && cuentaAnterior != null)
+                if (resultado == 1)
                 {
                     await _bitacoraService.RegistrarAccionAsync(
                         idUsuario,
                         "Cuenta contable actualizada",
-                        new
-                        {
-                            Antes = cuentaAnterior,
-                            Despues = cuenta
-                        }
+                        new { Antes = cuentaAnterior, Despues = cuenta }
                     );
                 }
 

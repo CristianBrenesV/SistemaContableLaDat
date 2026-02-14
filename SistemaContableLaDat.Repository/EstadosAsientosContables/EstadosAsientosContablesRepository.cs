@@ -55,25 +55,26 @@ namespace SistemaContableLaDat.Repository.EstadosAsientosContables
             }
         }
 
-
-        public async Task<int> InsertAsync(EstadosAsientoContable estadosasientocontable)
+        public async Task<int> InsertAsync(EstadosAsientoContable estado)
         {
             try
             {
                 using var connection = _dbConnectionFactory.CreateConnection();
                 var parametros = new DynamicParameters();
 
-                parametros.Add("pI_Codigo", estadosasientocontable.Codigo);
-                parametros.Add("pI_Nombre", estadosasientocontable.Nombre);
-                parametros.Add("pI_Descripcion", estadosasientocontable.Descripcion);
-                parametros.Add("pI_Estado", estadosasientocontable.Estado);
+                parametros.Add("pI_Codigo", estado.Codigo);
+                parametros.Add("pI_Nombre", estado.Nombre);
+                parametros.Add("pI_Descripcion", estado.Descripcion);
+                parametros.Add("pI_Estado", estado.Estado.ToString());
 
-                await connection.ExecuteAsync(
-                    "sp_EstadoAsientoContableInsertar",
-                    parametros,
-                    commandType: CommandType.StoredProcedure);
+                parametros.Add("pS_resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);
+                parametros.Add("pS_IdEstado", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                return 1; // Retorna 1 si se insertó correctamente
+                await connection.ExecuteAsync("sp_EstadoAsientoContableInsertar", parametros, commandType: CommandType.StoredProcedure);
+
+                estado.IdEstadoAsiento = parametros.Get<int>("pS_IdEstado");
+
+                return parametros.Get<int>("pS_resultado");
             }
             catch (Exception ex)
             {
@@ -82,25 +83,24 @@ namespace SistemaContableLaDat.Repository.EstadosAsientosContables
             }
         }
 
-        public async Task<int> UpdateAsync(EstadosAsientoContable estadosasientocontable)
+        public async Task<int> UpdateAsync(EstadosAsientoContable estado)
         {
             try
             {
                 using var connection = _dbConnectionFactory.CreateConnection();
                 var parametros = new DynamicParameters();
 
-                parametros.Add("pI_IdEstadoAsiento", estadosasientocontable.IdEstadoAsiento);
-                parametros.Add("pI_Codigo", estadosasientocontable.Codigo);
-                parametros.Add("pI_Nombre", estadosasientocontable.Nombre);
-                parametros.Add("pI_Descripcion", estadosasientocontable.Descripcion);
-                parametros.Add("pI_Estado", estadosasientocontable.Estado);
+                parametros.Add("pI_IdEstado", estado.IdEstadoAsiento);
+                parametros.Add("pI_Codigo", estado.Codigo);
+                parametros.Add("pI_Nombre", estado.Nombre);
+                parametros.Add("pI_Descripcion", estado.Descripcion);
+                parametros.Add("pI_Estado", estado.Estado.ToString());
 
-                await connection.ExecuteAsync(
-                    "sp_EstadoAsientoContableActualizarPorId",
-                    parametros,
-                    commandType: CommandType.StoredProcedure);
+                parametros.Add("pS_resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                return 1; 
+                await connection.ExecuteAsync("sp_EstadoAsientoContableActualizarPorId", parametros, commandType: CommandType.StoredProcedure);
+
+                return parametros.Get<int>("pS_resultado");
             }
             catch (Exception ex)
             {
@@ -161,7 +161,7 @@ namespace SistemaContableLaDat.Repository.EstadosAsientosContables
                 parametros.Add("pI_Estado", estado);
 
                 return await connection.ExecuteScalarAsync<int>(
-                    "sp_EstadoAsientoContableCount",
+                    "sp_EstadoAsientoContableConteo",
                     parametros,
                     commandType: CommandType.StoredProcedure);
             }

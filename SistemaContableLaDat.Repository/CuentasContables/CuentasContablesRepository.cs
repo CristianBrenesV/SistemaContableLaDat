@@ -50,27 +50,31 @@ namespace SistemaContableLaDat.Repository.CuentasContables
             }
         }
 
-        public async Task<int> InsertAsync(CuentaContable cuentacontable)
+        public async Task<int> InsertAsync(CuentaContable cuentaContable)
         {
             try
             {
                 using var connection = _dbConnectionFactory.CreateConnection();
                 var parametros = new DynamicParameters();
 
-                parametros.Add("pI_CodigoCuenta", cuentacontable.CodigoCuenta);
-                parametros.Add("pI_Nombre", cuentacontable.Nombre);
-                parametros.Add("pI_Tipo", cuentacontable.Tipo);
-                parametros.Add("pI_CuentaPadre", cuentacontable.CuentaPadre);
-                parametros.Add("pI_TipoSaldo", cuentacontable.TipoSaldo);
-                parametros.Add("pI_AceptaMovimiento", cuentacontable.AceptaMovimiento);
-                parametros.Add("pI_Estado", cuentacontable.Estado);
+                parametros.Add("pI_CodigoCuenta", cuentaContable.CodigoCuenta);
+                parametros.Add("pI_Nombre", cuentaContable.Nombre);
+                parametros.Add("pI_Tipo", cuentaContable.Tipo.ToString()); 
+                parametros.Add("pI_CuentaPadre", cuentaContable.CuentaPadre);
+                parametros.Add("pI_TipoSaldo", cuentaContable.TipoSaldo.ToString()); 
+                parametros.Add("pI_AceptaMovimiento", cuentaContable.AceptaMovimiento ? 1 : 0);
+                parametros.Add("pI_Estado", cuentaContable.Estado.ToString()); 
 
                 parametros.Add("pS_resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);
                 parametros.Add("pS_IdCuenta", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                await connection.ExecuteAsync("sp_CuentasContablesInsertar", parametros, commandType: CommandType.StoredProcedure);
+                await connection.ExecuteAsync(
+                    "sp_CuentasContablesInsertar",
+                    parametros,
+                    commandType: CommandType.StoredProcedure
+                );
 
-                cuentacontable.IdCuenta = parametros.Get<int>("pS_IdCuenta");
+                cuentaContable.IdCuenta = parametros.Get<int>("pS_IdCuenta");
 
                 return parametros.Get<int>("pS_resultado");
             }
@@ -80,6 +84,7 @@ namespace SistemaContableLaDat.Repository.CuentasContables
                 return 0;
             }
         }
+
 
         public async Task<int> UpdateAsync(CuentaContable cuentacontable)
         {
@@ -97,14 +102,13 @@ namespace SistemaContableLaDat.Repository.CuentasContables
                 parametros.Add("pI_AceptaMovimiento", cuentacontable.AceptaMovimiento);
                 parametros.Add("pI_Estado", cuentacontable.Estado);
 
-                parametros.Add("pS_resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);
-                parametros.Add("pS_IdCuenta", dbType: DbType.Int32, direction: ParameterDirection.Output);
+                var filasAfectadas = await connection.ExecuteAsync(
+                    "sp_CuentasContablesActualizarPorIdCuenta",
+                    parametros,
+                    commandType: CommandType.StoredProcedure
+                );
 
-                await connection.ExecuteAsync("sp_CuentasContablesActualizarPorIdCuenta", parametros, commandType: CommandType.StoredProcedure);
-
-                cuentacontable.IdCuenta = parametros.Get<int>("pS_IdCuenta");
-
-                return parametros.Get<int>("pS_resultado");
+                return filasAfectadas; 
             }
             catch (Exception ex)
             {

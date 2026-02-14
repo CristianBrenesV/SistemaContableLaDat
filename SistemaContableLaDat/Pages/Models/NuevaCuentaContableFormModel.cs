@@ -27,5 +27,6 @@ namespace SistemaContableLaDat.Pages.Models
 
         [Required]
         public EstadoCuenta Estado { get; set; }
+
     }
 }

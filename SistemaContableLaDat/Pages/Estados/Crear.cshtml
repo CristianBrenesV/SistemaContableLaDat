@@ -1,6 +1,57 @@
 ﻿@page
 @model SistemaContableLaDat.Pages.Estados.CrearModel
 @{
-    ViewData["Title"] = "Crear Estados";
+    ViewData["Title"] = "Crear Estado de Asiento Contable";
     Layout = "_PrincipalLayout";
 }
+
+<h1 class="mt-4">Crear Estado de Asiento Contable</h1>
+
+<a asp-page="/Estados/Index" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Regresar
+</a>
+
+<button type="submit" class="btn btn-dark" form="formCrearEstado">
+    <i class="bi bi-save"></i> Guardar
+</button>
+
+<div class="container mt-5 d-flex">
+    <div class="card shadow-sm border-0 w-50" style="background-color: #d9d9d9;">
+        <div class="card-body">
+
+            <form id="formCrearEstado" method="post">
+
+                <div class="mb-3">
+                    <label asp-for="EstadoForm.Codigo" class="form-label"><strong>Código</strong></label>
+                    <input asp-for="EstadoForm.Codigo" class="form-control" />
+                    <span asp-validation-for="EstadoForm.Codigo" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="EstadoForm.Nombre" class="form-label"><strong>Nombre</strong></label>
+                    <input asp-for="EstadoForm.Nombre" class="form-control" />
+                    <span asp-validation-for="EstadoForm.Nombre" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="EstadoForm.Descripcion" class="form-label"><strong>Descripción</strong></label>
+                    <textarea asp-for="EstadoForm.Descripcion" class="form-control"></textarea>
+                    <span asp-validation-for="EstadoForm.Descripcion" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="EstadoForm.Estado" class="form-label"><strong>Estado</strong></label>
+                    <select asp-for="EstadoForm.Estado" class="form-select">
+                        <option value="">-- Seleccione estado --</option>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                    <span asp-validation-for="EstadoForm.Estado" class="text-danger"></span>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+

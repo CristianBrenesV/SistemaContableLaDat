@@ -1,6 +1,78 @@
 ﻿@page
 @model SistemaContableLaDat.Pages.CuentasContables.CrearModel
 @{
-    ViewData["Title"] = "Crear Cuentas Contables";
+    ViewData["Title"] = "Crear Cuenta Contable";
     Layout = "_PrincipalLayout";
 }
+
+<h1 class="mt-4">Crear Cuenta Contable</h1>
+
+<a asp-page="/CuentasContables/Index" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Regresar
+</a>
+
+<button type="submit" class="btn btn-dark" form="formCrearCuenta">
+    <i class="bi bi-save"></i> Guardar
+</button>
+
+<div class="container mt-5 d-flex">
+    <div class="card shadow-sm border-0 w-50" style="background-color: #d9d9d9;">
+        <div class="card-body">
+            <form id="formCrearCuenta" method="post">
+
+                <div class="mb-3">
+                    <label asp-for="CuentaForm.CodigoCuenta" class="form-label"><strong>Código</strong></label>
+                    <input asp-for="CuentaForm.CodigoCuenta" class="form-control" />
+                    <span asp-validation-for="CuentaForm.CodigoCuenta" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="CuentaForm.Nombre" class="form-label"><strong>Nombre de la Cuenta</strong></label>
+                    <input asp-for="CuentaForm.Nombre" class="form-control" />
+                    <span asp-validation-for="CuentaForm.Nombre" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="CuentaForm.Tipo" class="form-label"><strong>Tipo de Cuenta</strong></label>
+                    <select asp-for="CuentaForm.Tipo" class="form-select">
+                        <option value="">-- Seleccione tipo --</option>
+                        <option value="Activo">Activo</option>
+                        <option value="Pasivo">Pasivo</option>
+                        <option value="Capital">Capital</option>
+                        <option value="Ingreso">Ingreso</option>
+                        <option value="Gasto">Gasto</option>
+                    </select>
+                    <span asp-validation-for="CuentaForm.Tipo" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="CuentaForm.CuentaPadreId" class="form-label"><strong>Cuenta Padre</strong></label>
+                    <select asp-for="CuentaForm.CuentaPadreId" class="form-select">
+                        <option value="">-- Ninguna (Cuenta Principal) --</option>
+                        @foreach (var c in Model.ListaCuentas)
+                        {
+                            <option value="@c.Value">@c.Text</option>
+                        }
+                    </select>
+                    <span asp-validation-for="CuentaForm.CuentaPadreId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input asp-for="CuentaForm.AceptaMovimiento" class="form-check-input" />
+                    <label asp-for="CuentaForm.AceptaMovimiento" class="form-check-label"><strong>Acepta Movimiento</strong></label>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="CuentaForm.Estado" class="form-label"><strong>Estado</strong></label>
+                    <select asp-for="CuentaForm.Estado" class="form-select">
+                        <option value="">-- Seleccione estado --</option>
+                        <option value="Activa">Activa</option>
+                        <option value="Inactiva">Inactiva</option>
+                    </select>
+                    <span asp-validation-for="CuentaForm.Estado" class="text-danger"></span>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
