@@ -16,5 +16,7 @@ namespace SistemaContableLaDat.Service.Abstract
         Task<int> DeleteAsync(int idPeriodo, int idUsuario);
         Task<IEnumerable<PeriodoContable>> GetPaginadoAsync(int pagina, int tamanoPagina);
         Task<int> CountAsync(string? estado = null);
+        Task<int> CerrarPeriodoAsync(int idPeriodo, int idUsuario);
+        Task<int> ReabrirPeriodoAsync(int idPeriodo, int idUsuario);
     }
 }

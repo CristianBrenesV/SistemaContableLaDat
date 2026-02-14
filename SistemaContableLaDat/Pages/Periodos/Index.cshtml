@@ -1,11 +1,13 @@
 ﻿@page
 @model SistemaContableLaDat.Pages.Periodos.IndexModel
 @using SistemaContableLaDat.Entities.PeriodosContables
+@using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
     ViewData["Title"] = "Administración de Periodos";
     Layout = "_PrincipalLayout";
 }
+
 <h1 class="mt-4">Administración de Periodos Contables</h1>
 
 <p>
@@ -14,6 +16,39 @@
     </a>
 </p>
 
+<!-- Filtro -->
+<div class="card mb-4 border-1 shadow-none">
+    <div class="card-body bg-white rounded border">
+        <form method="get" class="row g-3 align-items-end">
+
+            <!-- Periodo 
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Periodo Contable</label>
+                <select asp-for="PeriodoId" asp-items="Model.ListaPeriodos" class="form-select form-select-sm">
+                    <option value="">-- Todos los periodos --</option>
+                </select>
+            </div>-->
+            <!-- Estado -->
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Estado</label>
+                <select asp-for="EstadoId" asp-items="Model.ListaEstados" class="form-select form-select-sm">
+                    <option value="">-- Todos los estados --</option>
+                </select>
+            </div>
+
+            <!-- Botones -->
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-sm btn-dark">
+                    <i class="bi bi-filter"></i> Filtrar
+                </button>
+                <a asp-page="./Index" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de periodos -->
 <div class="table-responsive">
     <table class="table table-bordered table-striped">
         <thead class="table-dark">
@@ -45,9 +80,7 @@
                         }
                         <span class="@badgeClase">@periodo.Estado.ToString()</span>
                     </td>
-                    <td>
-                        @periodo.UsuarioCierreNombre (@periodo.IdUsuarioCierre)
-                    </td>
+                    <td>@periodo.UsuarioCierreNombre (@periodo.IdUsuarioCierre)</td>
                     <td>
                         @(periodo.FechaCierre.HasValue
                                             ? periodo.FechaCierre.Value.ToString("dd/MM/yyyy HH:mm")
@@ -59,6 +92,22 @@
                            asp-route-idPeriodo="@periodo.IdPeriodo">
                             <i class="bi bi-pencil-square"></i> Editar
                         </a>
+                        @if (periodo.Estado == EstadoPeriodosContables.Abierto)
+                        {
+                            <button class="btn btn-sm btn-warning"
+                                    asp-page-handler="Cerrar"
+                                    asp-route-idPeriodo="@periodo.IdPeriodo">
+                                <i class="bi bi-lock-fill"></i> Cerrar
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-success"
+                                    asp-page-handler="Reabrir"
+                                    asp-route-idPeriodo="@periodo.IdPeriodo">
+                                <i class="bi bi-unlock-fill"></i> Reabrir
+                            </button>
+                        }
 
                         <button type="button"
                                 class="btn btn-sm btn-danger"
@@ -75,6 +124,7 @@
     </table>
 </div>
 
+<!-- Paginación -->
 <nav aria-label="Paginación de periodos" class="mt-4">
     <ul class="pagination pagination-dark justify-content-center">
         @if (Model.PaginaActual > 1)
@@ -111,6 +161,7 @@
     </div>
 }
 
+<!-- Modal eliminar -->
 <div class="modal fade" id="modalEliminar" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">

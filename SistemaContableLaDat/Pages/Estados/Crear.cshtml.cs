@@ -37,7 +37,6 @@ namespace SistemaContableLaDat.Pages.Estados
                 return RedirectToPage("/Usuarios/Index");
             }
 
-            // Mapeo del FormModel a la entidad
             var nuevoEstado = new EstadosAsientoContable
             {
                 Codigo = EstadoForm.Codigo,

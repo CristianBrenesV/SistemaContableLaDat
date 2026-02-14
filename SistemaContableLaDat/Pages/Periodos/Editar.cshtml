@@ -1,6 +1,52 @@
 ﻿@page
 @model SistemaContableLaDat.Pages.Periodos.EditarModel
+@using SistemaContableLaDat.Entities.PeriodosContables
 @{
-    ViewData["Title"] = "Editar Periodos";
+    ViewData["Title"] = "Editar Periodo Contable";
     Layout = "_PrincipalLayout";
 }
+
+<h1 class="mt-4">Editar Periodo Contable</h1>
+
+<a asp-page="/Periodos/Index" class="btn btn-outline-secondary mb-3">
+    <i class="bi bi-arrow-left"></i> Regresar
+</a>
+
+<button type="submit" class="btn btn-dark mb-3" form="formEditarPeriodo">
+    <i class="bi bi-save"></i> Guardar
+</button>
+
+<div class="container mt-2 d-flex">
+    <div class="card shadow-sm border-0 w-50" style="background-color: #d9d9d9;">
+        <div class="card-body">
+            <form id="formEditarPeriodo" method="post">
+
+                <input type="hidden" asp-for="PeriodoForm.IdPeriodo" />
+
+                <div class="mb-3">
+                    <label asp-for="PeriodoForm.Anio" class="form-label"><strong>Año</strong></label>
+                    <input asp-for="PeriodoForm.Anio" class="form-control" />
+                    <span asp-validation-for="PeriodoForm.Anio" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PeriodoForm.Mes" class="form-label"><strong>Mes</strong></label>
+                    <input asp-for="PeriodoForm.Mes" class="form-control" />
+                    <span asp-validation-for="PeriodoForm.Mes" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PeriodoForm.Estado" class="form-label"><strong>Estado</strong></label>
+                    <select asp-for="PeriodoForm.Estado" class="form-select">
+                        <option value="">-- Seleccione estado --</option>
+                        <option value="Abierto" selected="@(Model.PeriodoForm.Estado == EstadoPeriodosContables.Abierto ? "selected" : null)">Abierto</option>
+                        <option value="Cerrado" selected="@(Model.PeriodoForm.Estado == EstadoPeriodosContables.Cerrado ? "selected" : null)">Cerrado</option>
+                    </select>
+
+                    <span asp-validation-for="PeriodoForm.Estado" class="text-danger"></span>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>

@@ -137,5 +137,37 @@ namespace SistemaContableLaDat.Service.PeriodosContables
         {
             return _repository.CountAsync(estado);
         }
+
+        public async Task<int> CerrarPeriodoAsync(int idPeriodo, int idUsuario)
+        {
+            var resultado = await _repository.CerrarPeriodoAsync(idPeriodo, idUsuario);
+
+            if (resultado == 1)
+            {
+                await _bitacoraService.RegistrarAccionAsync(
+                    idUsuario,
+                    "Cierre de periodo contable",
+                    new { IdPeriodo = idPeriodo }
+                );
+            }
+
+            return resultado;
+        }
+
+        public async Task<int> ReabrirPeriodoAsync(int idPeriodo, int idUsuario)
+        {
+            var resultado = await _repository.ReabrirPeriodoAsync(idPeriodo);
+
+            if (resultado == 1)
+            {
+                await _bitacoraService.RegistrarAccionAsync(
+                    idUsuario,
+                    "Reapertura de periodo contable",
+                    new { IdPeriodo = idPeriodo }
+                );
+            }
+
+            return resultado;
+        }
     }
 }

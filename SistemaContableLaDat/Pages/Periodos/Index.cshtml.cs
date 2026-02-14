@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using SistemaContableLaDat.Entities.PeriodosContables;
+using SistemaContableLaDat.Repository.Usuarios;
 using SistemaContableLaDat.Service.Abstract;
 
 namespace SistemaContableLaDat.Pages.Periodos
@@ -20,7 +22,15 @@ namespace SistemaContableLaDat.Pages.Periodos
             _bitacoraService = bitacoraService;
         }
 
+        [BindProperty(SupportsGet = true)]
+        public int? PeriodoId { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? EstadoId { get; set; }
+
         public List<PeriodoContable> Periodos { get; set; } = new();
+
+        public IEnumerable<SelectListItem> ListaEstados { get; set; }
 
         public int PaginaActual { get; set; }
         public int TotalPaginas { get; set; }
@@ -39,21 +49,39 @@ namespace SistemaContableLaDat.Pages.Periodos
 
         public async Task<IActionResult> OnGetAsync(int pagina = 1)
         {
-            var periodosEntidad = await _periodosService.GetPaginadoAsync(pagina, TamanoPagina);
-            var total = await _periodosService.CountAsync();
+            var query = await _periodosService.GetPaginadoAsync(pagina, TamanoPagina);
 
+            if (PeriodoId.HasValue)
+                query = query.Where(p => p.IdPeriodo == PeriodoId.Value).ToList();
+
+            if (EstadoId.HasValue)
+                query = query.Where(p => (int)p.Estado == EstadoId.Value).ToList();
+
+            var total = query.Count();
             PaginaActual = pagina;
             TotalPaginas = (int)Math.Ceiling(total / (double)TamanoPagina);
 
-            Periodos = periodosEntidad.ToList();
+            Periodos = query
+                .Skip((pagina - 1) * TamanoPagina)
+                .Take(TamanoPagina)
+                .ToList();
+
+            ListaEstados = Enum.GetValues(typeof(EstadoPeriodosContables))
+                .Cast<EstadoPeriodosContables>()
+                .Select(e => new SelectListItem
+                {
+                    Text = e.ToString(),
+                    Value = ((int)e).ToString(),
+                    Selected = EstadoId.HasValue && EstadoId.Value == (int)e
+                });
 
             var idUsuario = ObtenerIdUsuarioLogueado();
             if (idUsuario.HasValue)
             {
                 await _bitacoraService.RegistrarConsultaAsync(
                     idUsuario.Value,
-                    "Consulta paginada de periodos contables",
-                    new { Pagina = pagina, RegistrosMostrados = Periodos.Count }
+                    "Consulta de periodos contables con filtros",
+                    new { Pagina = pagina, PeriodoId, EstadoId, RegistrosMostrados = Periodos.Count }
                 );
             }
 
@@ -78,5 +106,26 @@ namespace SistemaContableLaDat.Pages.Periodos
 
             return RedirectToPage();
         }
+
+        public async Task<IActionResult> OnPostCerrarAsync(int idPeriodo)
+        {
+            var idUsuario = ObtenerIdUsuarioLogueado();
+            if (!idUsuario.HasValue) return RedirectToPage();
+
+            await _periodosService.CerrarPeriodoAsync(idPeriodo, idUsuario.Value);
+            TempData["Mensaje"] = "Periodo cerrado correctamente";
+            return RedirectToPage();
+        }
+
+        public async Task<IActionResult> OnPostReabrirAsync(int idPeriodo)
+        {
+            var idUsuario = ObtenerIdUsuarioLogueado();
+            if (!idUsuario.HasValue) return RedirectToPage();
+
+            await _periodosService.ReabrirPeriodoAsync(idPeriodo, idUsuario.Value);
+            TempData["Mensaje"] = "Periodo reabierto correctamente";
+            return RedirectToPage();
+        }
+
     }
 }
