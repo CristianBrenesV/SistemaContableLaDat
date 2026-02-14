@@ -37,14 +37,12 @@ namespace SistemaContableLaDat.Pages.Roles
             if (string.IsNullOrEmpty(IdRol))
                 return RedirectToPage("Index");
 
-            // Obtener info del rol
             var rolEntidad = await _rolService.GetByIdAsync(IdRol);
             if (rolEntidad == null)
                 return RedirectToPage("Index");
 
             NombreRol = rolEntidad.NombreRol;
 
-            // Listar pantallas y asignadas
             Pantallas = (await _rolpantallaService.GetPantallasDetalleByRolAsync(IdRol)).ToList();
             Form = new AsignarPantallasFormModel
             {
@@ -67,7 +65,6 @@ namespace SistemaContableLaDat.Pages.Roles
                 return RedirectToPage("/Usuarios/Index");
             }
 
-            // Actualizar pantallas asignadas
             var resultado = await _rolpantallaService.ActualizarPantallasAsync(
                 Form.IdRol,
                 Form.PantallasSeleccionadas ?? new List<int>(),

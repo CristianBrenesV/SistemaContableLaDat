@@ -1,0 +1,157 @@
+﻿@page
+@model SistemaContableLaDat.Pages.CuentasContables.IndexModel
+@using SistemaContableLaDat.Entities.CuentasContables
+@{
+    ViewData["Title"] = "Administración Cuentas Contables";
+    Layout = "_PrincipalLayout";
+}
+<h1 class="mt-4">Administración de Cuentas Contables</h1>
+
+<p>
+    <a class="btn btn-dark" asp-page="Crear">
+        <i class="bi bi-plus-circle"></i> Nueva Cuenta
+    </a>
+</p>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Cuenta Padre</th>
+                <th>Tipo Saldo</th>
+                <th>Acepta Movimiento</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cuenta in Model.Cuentas)
+            {
+                <tr>
+                    <td>@cuenta.IdCuenta</td>
+                    <td>@cuenta.CodigoCuenta</td>
+                    <td>@cuenta.Nombre</td>
+                    <td>@cuenta.Tipo</td>
+                    <td>@cuenta.CuentaPadre</td>
+                    <td>@cuenta.TipoSaldo</td>
+                    <td>
+                        @if (cuenta.AceptaMovimiento)
+                        {
+                            <span class="badge bg-success">Sí</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">No</span>
+                        }
+                    </td>
+                    <td>
+                        @{
+                            var badgeClase = cuenta.Estado switch
+                            {
+                                EstadoCuenta.Activa => "badge bg-success",
+                                EstadoCuenta.Inactiva => "badge bg-secondary",
+                                _ => "badge bg-light text-dark border"
+                            };
+                        }
+
+                        <span class="@badgeClase">
+                            @cuenta.Estado
+                        </span>
+                    </td>
+
+                    <td>
+                        <a class="btn btn-sm btn-outline-dark"
+                           asp-page="Editar"
+                           asp-route-idCuenta="@cuenta.IdCuenta">
+                            <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+
+                        <button type="button"
+                                class="btn btn-sm btn-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalEliminar"
+                                data-id="@cuenta.IdCuenta"
+                                data-nombre="@cuenta.Nombre">
+                            <i class="bi bi-trash3"></i> Eliminar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<nav aria-label="Paginación de cuentas" class="mt-4">
+    <ul class="pagination pagination-dark justify-content-center">
+        @if (Model.PaginaActual > 1)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-route-pagina="@(Model.PaginaActual - 1)" aria-label="Anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        }
+
+        @for (int i = 1; i <= Model.TotalPaginas; i++)
+        {
+            <li class="page-item @(i == Model.PaginaActual ? "active" : "")">
+                <a class="page-link" asp-route-pagina="@i">@i</a>
+            </li>
+        }
+
+        @if (Model.PaginaActual < Model.TotalPaginas)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-route-pagina="@(Model.PaginaActual + 1)" aria-label="Siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        }
+    </ul>
+</nav>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-dark mt-3">
+        @TempData["Mensaje"]
+    </div>
+}
+
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Eliminar">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Desea eliminar la cuenta: <strong id="nombreCuenta"></strong>?
+                </div>
+                <input type="hidden" name="idCuenta" id="cuentaIdEliminar" />
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="submit" class="btn btn-dark">Sí, eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const modalEliminar = document.getElementById('modalEliminar');
+        modalEliminar.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const idCuenta = button.getAttribute('data-id');
+            const nombreCuenta = button.getAttribute('data-nombre');
+
+            document.getElementById('cuentaIdEliminar').value = idCuenta;
+            document.getElementById('nombreCuenta').textContent = nombreCuenta;
+        });
+    </script>
+}
