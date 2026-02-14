@@ -59,19 +59,23 @@ builder.Services.AddScoped<UsuarioRepository>();
 builder.Services.AddScoped<LoginRepository>();
 builder.Services.AddScoped<BitacoraRepository>();
 builder.Services.AddScoped<AsientoRepository>();
+builder.Services.AddScoped<CierreRepository>();
+builder.Services.AddScoped<CuentasContablesRepository>();
 builder.Services.AddScoped<CuentaRepository>();
 builder.Services.AddScoped<PeriodoRepository>();
 builder.Services.AddScoped<RolRepository>();
 builder.Services.AddScoped<RolPantallaRepository>();
 builder.Services.AddScoped<UsuarioRolRepository>();
 builder.Services.AddScoped<PantallaRepository>();
-builder.Services.AddScoped<CuentasContablesRepository>();
+
 builder.Services.AddScoped<EstadoAsientoContableRepository>();
 builder.Services.AddScoped<PeriodoContableRepository>();
 // 4. Servicios
+//builder.Services.AddScoped<IAsientoService, AsientoService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IBitacoraService, BitacoraService>();
 builder.Services.AddScoped<ISeguridadService, SeguridadService>();
+builder.Services.AddScoped<ICierreService, CierreService>();
 builder.Services.AddScoped<CuentaService>();
 builder.Services.AddScoped<PeriodoService>();
 builder.Services.AddScoped<AsientoService>();
@@ -83,8 +87,8 @@ builder.Services.AddScoped<IEstadosAsientosContablesService, EstadosAsientosCont
 builder.Services.AddScoped<ICuentasContablesService, CuentasContablesService>();
 builder.Services.AddScoped<IPeriodosContablesService, PeriodosContablesService>();
 
-builder.Services.AddScoped<CierreRepository>();
-builder.Services.AddScoped<ICierreService, CierreService>();
+
+
 
 // Autenticación
 builder.Services.AddScoped<IEncriptadoService, EncriptadoService>();

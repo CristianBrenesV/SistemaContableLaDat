@@ -34,6 +34,22 @@ namespace SistemaContableLaDat.Repository.PeriodosContables
             }
         }
 
+        public async Task<IEnumerable<PeriodoContable>> GetAnioMesAsync()
+        {
+            try
+            {
+                using var connection = _dbConnectionFactory.CreateConnection();
+                return await connection.QueryAsync<PeriodoContable>(
+                    "sp_PeriodoContableListarAnioMes",
+                    commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error en GetAllAsync (Periodos): {ex.Message}");
+                return Enumerable.Empty<PeriodoContable>();
+            }
+        }
+
         public async Task<PeriodoContable?> GetByIdAsync(int idPeriodo)
         {
             try

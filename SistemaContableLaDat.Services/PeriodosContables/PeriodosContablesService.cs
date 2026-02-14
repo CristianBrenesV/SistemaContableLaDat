@@ -32,6 +32,11 @@ namespace SistemaContableLaDat.Service.PeriodosContables
             return _repository.GetByIdAsync(idPeriodo);
         }
 
+        public Task<IEnumerable<PeriodoContable>> GetAnioMesAsync()
+        {
+            return _repository.GetAnioMesAsync();
+        }
+
         public async Task<int> InsertAsync(PeriodoContable periodo, int idUsuario)
         {
             try

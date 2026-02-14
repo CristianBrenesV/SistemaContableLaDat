@@ -9,7 +9,8 @@ namespace SistemaContableLaDat.Service.Abstract
 {
     public interface IPeriodosContablesService
     {
-        Task<IEnumerable<PeriodoContable>> GetAllAsync();
+        Task<IEnumerable<PeriodoContable>> GetAllAsync(); 
+        Task<IEnumerable<PeriodoContable>> GetAnioMesAsync();
         Task<PeriodoContable?> GetByIdAsync(int idPeriodo);
         Task<int> InsertAsync(PeriodoContable periodo, int idUsuario);
         Task<int> UpdateAsync(PeriodoContable periodo, int idUsuario);
