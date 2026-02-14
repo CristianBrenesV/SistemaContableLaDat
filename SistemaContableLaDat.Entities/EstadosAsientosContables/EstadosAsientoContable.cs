@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SistemaContableLaDat.Entities.EstadosAsientosContables
 {
-    public class EstadosAsientosContables
+    public class EstadosAsientoContable
     {
         public int IdEstadoAsiento { get; set; }
 

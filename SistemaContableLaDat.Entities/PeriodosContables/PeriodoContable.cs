@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SistemaContableLaDat.Entities.PeriodosContables
 {
-    public class PeriodosContables
+    public class PeriodoContable
     {
         public int IdPeriodo { get; set; }
 

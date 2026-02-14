@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SistemaContableLaDat.Entities.CuentasContables
 {
-    public class CuentasContables
+    public class CuentaContable
     {
         public int IdCuenta { get; set; }
 
