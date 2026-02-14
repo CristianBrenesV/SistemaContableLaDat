@@ -43,6 +43,32 @@
             color: white;
             padding: 0 1rem;
         }
+        /* Fondo y borde de la página activa */
+        .pagination-dark .page-item.active .page-link {
+            background-color: #333; /* gris oscuro de fondo */
+            border-color: #333; /* borde a juego */
+            color: #fff; /* número en blanco para contraste */
+        }
+
+        /* Números normales */
+        .pagination-dark .page-link {
+            color: #000; /* números en negro */
+            background-color: transparent;
+            border: 1px solid #dee2e6; /* borde gris tenue */
+        }
+
+            /* Hover sobre números */
+            .pagination-dark .page-link:hover {
+                background-color: #e0e0e0; /* gris claro al pasar el mouse */
+                color: #000; /* siempre negro */
+            }
+
+        /* Disabled (Anterior/Siguiente cuando no hay más páginas) */
+        .pagination-dark .page-item.disabled .page-link {
+            color: #6c757d; /* gris para deshabilitado */
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
     </style>
 </head>
 <body>

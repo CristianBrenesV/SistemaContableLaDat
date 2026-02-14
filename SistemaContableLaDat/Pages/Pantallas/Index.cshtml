@@ -70,6 +70,34 @@
     </table>
 </div>
 
+<nav aria-label="Paginación de pantallas" class="mt-4">
+    <ul class="pagination pagination-dark justify-content-center">
+        @if (Model.PaginaActual > 1)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-route-pagina="@(Model.PaginaActual - 1)" aria-label="Anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        }
+
+        @for (int i = 1; i <= Model.TotalPaginas; i++)
+        {
+            <li class="page-item @(i == Model.PaginaActual ? "active" : "")">
+                <a class="page-link" asp-route-pagina="@i">@i</a>
+            </li>
+        }
+
+        @if (Model.PaginaActual < Model.TotalPaginas)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-route-pagina="@(Model.PaginaActual + 1)" aria-label="Siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        }
+    </ul>
+</nav>
 
 @if (TempData["Mensaje"] != null)
 {

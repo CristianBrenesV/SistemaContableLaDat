@@ -146,10 +146,22 @@ namespace SistemaContableLaDat.Repository.CuentasContables
                 commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<int> CountAsync()
+        public async Task<int> CountAsync(string? tipo = null, string? estado = null)
         {
             using var connection = _dbConnectionFactory.CreateConnection();
-            return await connection.ExecuteScalarAsync<int>("sp_CuentasContables_Count", commandType: CommandType.StoredProcedure);
+
+            var parameters = new
+            {
+                pI_Tipo = tipo,   
+                pI_Estado = estado 
+            };
+
+            return await connection.ExecuteScalarAsync<int>(
+                "sp_CuentasContablesConteo",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
         }
+
     }
 }

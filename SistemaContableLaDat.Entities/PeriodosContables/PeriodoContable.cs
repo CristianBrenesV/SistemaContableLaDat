@@ -23,5 +23,7 @@ namespace SistemaContableLaDat.Entities.PeriodosContables
         public int? IdUsuarioCierre { get; set; }
 
         public DateTime? FechaCierre { get; set; }
+
+        public string UsuarioCierreNombre { get; set; }
     }
 }
