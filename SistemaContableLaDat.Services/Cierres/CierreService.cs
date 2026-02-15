@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SistemaContableLaDat.Entities.Cierres;
+﻿using SistemaContableLaDat.Entities.Cierres;
 using SistemaContableLaDat.Repository.Cierres;
 using SistemaContableLaDat.Service.Abstract;
-using SistemaContableLaDat.Service.Bitacora;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SistemaContableLaDat.Service.Cierres
 {
@@ -34,9 +32,9 @@ namespace SistemaContableLaDat.Service.Cierres
 
                 // Registrar en bitácora
                 await _bitacora.RegistrarConsultaAsync(
-                    "Sistema",
-                    "Cálculo de cierre contable",
-                    new { IdPeriodo = idPeriodo, Resultado = resultado }
+                    idUsuario: 0, // 0 o -1 para indicar "Sistema" (según tu lógica)
+                    elemento: "Cálculo de cierre contable",
+                    filtros: new { IdPeriodo = idPeriodo, Resultado = resultado }
                 );
 
                 return resultado;
@@ -44,8 +42,8 @@ namespace SistemaContableLaDat.Service.Cierres
             catch (Exception ex)
             {
                 await _bitacora.RegistrarErrorAsync(
-                    "Sistema",
-                    $"Error calculando cierre periodo {idPeriodo}: {ex.Message}"
+                    idUsuario: 0,
+                    errorDetalle: $"Error calculando cierre periodo {idPeriodo}: {ex.Message}"
                 );
                 throw;
             }
@@ -57,9 +55,9 @@ namespace SistemaContableLaDat.Service.Cierres
             {
                 // Registrar inicio en bitácora
                 await _bitacora.RegistrarCreacionAsync(
-                    idUsuario.ToString(),
-                    "Proceso de Cierre Contable",
-                    new
+                    idUsuario: idUsuario,
+                    elemento: "Proceso de Cierre Contable",
+                    datosNuevos: new
                     {
                         IdPeriodo = idPeriodo,
                         FechaInicio = DateTime.Now,
@@ -70,16 +68,12 @@ namespace SistemaContableLaDat.Service.Cierres
                 // Validar que se pueda cerrar
                 var puedeCerrar = await _repository.ValidarPeriodosAnterioresCerradosAsync(idPeriodo);
                 if (!puedeCerrar)
-                {
                     throw new Exception("No se puede cerrar el periodo porque hay periodos anteriores abiertos.");
-                }
 
                 // Calcular balance para verificar
                 var balance = await _repository.CalcularBalanceAsync(idPeriodo);
                 if (!balance.Balanceado)
-                {
                     throw new Exception($"El periodo no está balanceado. Diferencia: {balance.Diferencia:C}");
-                }
 
                 // Ejecutar cierre en base de datos
                 var resultado = await _repository.EjecutarCierreAsync(idPeriodo, idUsuario);
@@ -88,9 +82,9 @@ namespace SistemaContableLaDat.Service.Cierres
                 {
                     // Registrar éxito en bitácora
                     await _bitacora.RegistrarCreacionAsync(
-                        idUsuario.ToString(),
-                        "Cierre Contable Completado",
-                        new
+                        idUsuario: idUsuario,
+                        elemento: "Cierre Contable Completado",
+                        datosNuevos: new
                         {
                             IdPeriodo = idPeriodo,
                             Anio = balance.Anio,
@@ -109,8 +103,8 @@ namespace SistemaContableLaDat.Service.Cierres
             {
                 // Registrar error en bitácora
                 await _bitacora.RegistrarErrorAsync(
-                    idUsuario.ToString(),
-                    $"Error en cierre contable periodo {idPeriodo}: {ex.Message}"
+                    idUsuario: idUsuario,
+                    errorDetalle: $"Error en cierre contable periodo {idPeriodo}: {ex.Message}"
                 );
 
                 throw;
@@ -125,9 +119,9 @@ namespace SistemaContableLaDat.Service.Cierres
 
                 // Registrar consulta en bitácora
                 await _bitacora.RegistrarConsultaAsync(
-                    "Sistema",
-                    "Saldos detallados para cierre",
-                    new { IdPeriodo = idPeriodo, TotalCuentas = saldos.Count() }
+                    idUsuario: 0, // "Sistema"
+                    elemento: "Saldos detallados para cierre",
+                    filtros: new { IdPeriodo = idPeriodo, TotalCuentas = saldos.Count() }
                 );
 
                 return saldos;
@@ -135,8 +129,8 @@ namespace SistemaContableLaDat.Service.Cierres
             catch (Exception ex)
             {
                 await _bitacora.RegistrarErrorAsync(
-                    "Sistema",
-                    $"Error obteniendo saldos periodo {idPeriodo}: {ex.Message}"
+                    idUsuario: 0,
+                    errorDetalle: $"Error obteniendo saldos periodo {idPeriodo}: {ex.Message}"
                 );
                 throw;
             }

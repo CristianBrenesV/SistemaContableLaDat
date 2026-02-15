@@ -1,0 +1,198 @@
+﻿@page
+@model SistemaContableLaDat.Pages.Periodos.IndexModel
+@using SistemaContableLaDat.Entities.PeriodosContables
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Administración de Periodos";
+    Layout = "_PrincipalLayout";
+}
+
+<h1 class="mt-4">Administración de Periodos Contables</h1>
+
+<p>
+    <a class="btn btn-dark" asp-page="Crear">
+        <i class="bi bi-plus-circle"></i> Nuevo Periodo
+    </a>
+</p>
+
+<!-- Filtro -->
+<div class="card mb-4 border-1 shadow-none">
+    <div class="card-body bg-white rounded border">
+        <form method="get" class="row g-3 align-items-end">
+
+            <!-- Periodo 
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Periodo Contable</label>
+                <select asp-for="PeriodoId" asp-items="Model.ListaPeriodos" class="form-select form-select-sm">
+                    <option value="">-- Todos los periodos --</option>
+                </select>
+            </div>-->
+            <!-- Estado -->
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Estado</label>
+                <select asp-for="EstadoId" asp-items="Model.ListaEstados" class="form-select form-select-sm">
+                    <option value="">-- Todos los estados --</option>
+                </select>
+            </div>
+
+            <!-- Botones -->
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-sm btn-dark">
+                    <i class="bi bi-filter"></i> Filtrar
+                </button>
+                <a asp-page="./Index" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de periodos -->
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Año</th>
+                <th>Mes</th>
+                <th>Estado</th>
+                <th>Usuario Cierre (ID)</th>
+                <th>Fecha Cierre</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var periodo in Model.Periodos)
+            {
+                <tr>
+                    <td>@periodo.IdPeriodo</td>
+                    <td>@periodo.Anio</td>
+                    <td>@periodo.Mes</td>
+                    <td>
+                        @{
+                            var badgeClase = periodo.Estado switch
+                            {
+                                EstadoPeriodosContables.Abierto => "badge bg-success",
+                                EstadoPeriodosContables.Cerrado => "badge bg-danger",
+                                _ => "badge bg-secondary"
+                            };
+                        }
+                        <span class="@badgeClase">@periodo.Estado.ToString()</span>
+                    </td>
+                    <td>@periodo.UsuarioCierreNombre (@periodo.IdUsuarioCierre)</td>
+                    <td>
+                        @(periodo.FechaCierre.HasValue
+                                            ? periodo.FechaCierre.Value.ToString("dd/MM/yyyy HH:mm")
+                                            : "-")
+                    </td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-dark"
+                           asp-page="Editar"
+                           asp-route-idPeriodo="@periodo.IdPeriodo">
+                            <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+                        @if (periodo.Estado == EstadoPeriodosContables.Abierto)
+                        {
+                            <button class="btn btn-sm btn-warning"
+                                    asp-page-handler="Cerrar"
+                                    asp-route-idPeriodo="@periodo.IdPeriodo">
+                                <i class="bi bi-lock-fill"></i> Cerrar
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-success"
+                                    asp-page-handler="Reabrir"
+                                    asp-route-idPeriodo="@periodo.IdPeriodo">
+                                <i class="bi bi-unlock-fill"></i> Reabrir
+                            </button>
+                        }
+
+                        <button type="button"
+                                class="btn btn-sm btn-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalEliminar"
+                                data-id="@periodo.IdPeriodo"
+                                data-nombre="@($"{periodo.Mes}/{periodo.Anio}")">
+                            <i class="bi bi-trash3"></i> Eliminar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Paginación -->
+<nav aria-label="Paginación de periodos" class="mt-4">
+    <ul class="pagination pagination-dark justify-content-center">
+        @if (Model.PaginaActual > 1)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-route-pagina="@(Model.PaginaActual - 1)" aria-label="Anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        }
+
+        @for (int i = 1; i <= Model.TotalPaginas; i++)
+        {
+            <li class="page-item @(i == Model.PaginaActual ? "active" : "")">
+                <a class="page-link" asp-route-pagina="@i">@i</a>
+            </li>
+        }
+
+        @if (Model.PaginaActual < Model.TotalPaginas)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-route-pagina="@(Model.PaginaActual + 1)" aria-label="Siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        }
+    </ul>
+</nav>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-dark mt-3">
+        @TempData["Mensaje"]
+    </div>
+}
+
+<!-- Modal eliminar -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Eliminar">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Desea eliminar el periodo: <strong id="nombrePeriodo"></strong>?
+                </div>
+                <input type="hidden" name="idPeriodo" id="periodoIdEliminar" />
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="submit" class="btn btn-dark">Sí, eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const modalEliminar = document.getElementById('modalEliminar');
+        modalEliminar.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const idPeriodo = button.getAttribute('data-id');
+            const nombrePeriodo = button.getAttribute('data-nombre');
+
+            document.getElementById('periodoIdEliminar').value = idPeriodo;
+            document.getElementById('nombrePeriodo').textContent = nombrePeriodo;
+        });
+    </script>
+}

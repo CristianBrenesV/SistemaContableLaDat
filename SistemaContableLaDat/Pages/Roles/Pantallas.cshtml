@@ -1,0 +1,57 @@
+﻿@page
+@model SistemaContableLaDat.Pages.Roles.PantallasModel
+@{
+    ViewData["Title"] = "Administración de Pantallas por Rol";
+    Layout = "_PrincipalLayout";
+}
+
+<h1 class="mt-4">Asignación de Pantallas para el Rol: @Model.NombreRol</h1>
+
+<p>
+    <a class="btn btn-outline-secondary" asp-page="Index">
+        <i class="bi bi-arrow-left"></i> Regresar
+    </a>
+
+    <button type="submit" form="formPantallas" class="btn btn-dark">
+        <i class="bi bi-save"></i> Guardar
+    </button>
+</p>
+
+<form method="post" id="formPantallas">
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th style="white-space: nowrap;">ID</th>
+                    <th style="white-space: nowrap;">Nombre</th>
+                    <th style="white-space: nowrap;">Descripción</th>
+                    <th style="white-space: nowrap;">Ruta</th>
+                    <th style="white-space: nowrap;">Asignada</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Pantallas.Count; i++)
+                {
+                    <tr>
+                        <td style="white-space: nowrap;">@(i + 1)</td>
+                        <td style="white-space: nowrap;">@Model.Pantallas[i].Nombre</td>
+                        <td style="white-space: nowrap;">@Model.Pantallas[i].Descripcion</td>
+                        <td style="white-space: nowrap;">@Model.Pantallas[i].Ruta</td>
+                        <td class="text-center">
+                            <input type="checkbox" name="Form.PantallasSeleccionadas"
+                                   value="@Model.Pantallas[i].IdPantalla"
+                                   @(Model.Form.PantallasSeleccionadas.Contains(Model.Pantallas[i].IdPantalla) ? "checked" : "") />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</form>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-dark mt-3" role="alert">
+        @TempData["Mensaje"]
+    </div>
+}

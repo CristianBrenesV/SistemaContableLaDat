@@ -66,28 +66,7 @@
         </div>
     </div>
 
-    <script>
-        const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minuto
-        let inactivityTimer;
-
-        function resetTimer() {
-            clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(showModal, INACTIVITY_TIMEOUT);
-        }
-
-        function showModal() {
-            const modalElement = document.getElementById('sessionExpiredModal');
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        }
-
-        // Reinicia el temporizador con actividad
-        window.addEventListener('load', resetTimer);
-        window.addEventListener('mousemove', resetTimer);
-        window.addEventListener('keypress', resetTimer);
-        window.addEventListener('click', resetTimer);
-        window.addEventListener('scroll', resetTimer);
-    </script>
+    <script src="~/js/inactividad.js"></script>
 
 </body>
 </html>

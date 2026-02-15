@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication;
+Ôªøusing Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -20,13 +20,13 @@ namespace SistemaContableLaDat.Pages
         }
 
         [BindProperty]
-        public string Usuario { get; set; }
+        public string Usuario { get; set; } = string.Empty;
 
         [BindProperty]
-        public string Clave { get; set; }
+        public string Clave { get; set; } = string.Empty;
 
-        public string Mensaje { get; set; }
-        public string MensajeInfo { get; set; }
+        public string Mensaje { get; set; } = string.Empty;
+        public string MensajeInfo { get; set; } = string.Empty;
 
         public async Task<IActionResult> OnPostAsync()
         {
@@ -38,7 +38,13 @@ namespace SistemaContableLaDat.Pages
                 return Page();
             }
 
-            var usuario = resultado.Usuario!;
+            if (resultado.Usuario == null)
+            {
+                Mensaje = "Ocurri√≥ un error interno al obtener el usuario.";
+                return Page();
+            }
+
+            var usuario = resultado.Usuario;
 
             var claims = new List<Claim>
             {
@@ -56,11 +62,11 @@ namespace SistemaContableLaDat.Pages
 
             await _bitacoraService.RegistrarAccionAsync(
                 usuario.IdUsuario,
-                "Inicio de sesiÛn",
+                "Inicio de sesi√≥n",
                 new
                 {
                     usuario.NombreUsuario,
-                    Fecha = DateTime.UtcNow
+                    Fecha = GetUtcMinus6()
                 }
             );
 
@@ -71,29 +77,36 @@ namespace SistemaContableLaDat.Pages
         {
             var returnUrl = Request.Query["returnUrl"].ToString();
 
-            if (!User.Identity.IsAuthenticated && !string.IsNullOrEmpty(returnUrl))
+            if (User.Identity != null && !User.Identity.IsAuthenticated && !string.IsNullOrEmpty(returnUrl))
             {
-                MensajeInfo = "Por favor inicie sesiÛn para utilizar el sistema.";
+                MensajeInfo = "Por favor inicie sesi√≥n para utilizar el sistema.";
 
                 try
                 {
-                    bool guardado = await _bitacoraService.RegistrarAccionAsync(
-                         null,
-                         "Intento de acceso no autorizado",
-                         new
-                         {
-                             Ruta = returnUrl,
-                             Fecha = DateTime.UtcNow,
-                             IP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Desconocida",
-                             Navegador = Request.Headers["User-Agent"].ToString()
-                         }
-                     );
+                    await _bitacoraService.RegistrarAccionAsync(
+                        0, // <-- usar 0 cuando no hay usuario
+                        "Intento de acceso no autorizado",
+                        new
+                        {
+                            Ruta = returnUrl,
+                            Fecha = GetUtcMinus6(),
+                            IP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Desconocida",
+                            Navegador = Request.Headers["User-Agent"].ToString()
+                        }
+                    );
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[Bit·cora] Error al registrar: {ex.Message}");
+                    Console.WriteLine($"[Bit√°cora] Error al registrar: {ex.Message}");
                 }
             }
         }
+        private DateTime GetUtcMinus6()
+        {
+            DateTime utcNow = DateTime.UtcNow;
+            TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time");
+            return TimeZoneInfo.ConvertTimeFromUtc(utcNow, tz);
+        }
+
     }
 }

@@ -1,0 +1,107 @@
+﻿@page
+@model SistemaContableLaDat.Pages.Usuarios.AgregarUsuarioModel
+@{
+    ViewData["Title"] = "Agregar Usuario";
+    Layout = "_PrincipalLayout";
+}
+
+<h1 class="mt-4">Agregar Usuario</h1>
+
+<a asp-page="/Usuarios/Index" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Regresar
+</a>
+
+<!-- BOTÓN GUARDAR fuera del form -->
+<button type="submit" class="btn btn-dark" form="formAgregarUsuario">
+    <i class="bi bi-save"></i> Guardar
+</button>
+
+<!-- AUTOGENERAR CLAVE -->
+<button type="button" class="btn btn-secondary" onclick="autogenerarClave()">
+    <i class="bi bi-key"></i> Autogenerar clave
+</button>
+
+<div class="container mt-5 d-flex">
+    <div class="card shadow-sm border-0 w-50" style="background-color: #d9d9d9;">
+        <div class="card-body">
+
+            <!-- FORM con ID para que los botones externos lo referencien -->
+            <form id="formAgregarUsuario" method="post" onsubmit="return validarClave()">
+
+                <div class="mb-3">
+                    <label asp-for="UsuarioForm.Usuario" class="form-label"><strong>Usuario</strong></label>
+                    <input asp-for="UsuarioForm.Usuario" class="form-control" />
+                    <span asp-validation-for="UsuarioForm.Usuario" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="UsuarioForm.NombreUsuario" class="form-label"><strong>Nombre</strong></label>
+                    <input asp-for="UsuarioForm.NombreUsuario" class="form-control" />
+                    <span asp-validation-for="UsuarioForm.NombreUsuario" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="UsuarioForm.ApellidoUsuario" class="form-label"><strong>Apellido</strong></label>
+                    <input asp-for="UsuarioForm.ApellidoUsuario" class="form-control" />
+                    <span asp-validation-for="UsuarioForm.ApellidoUsuario" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="UsuarioForm.CorreoElectronico" class="form-label"><strong>Correo Electrónico</strong></label>
+                    <input asp-for="UsuarioForm.CorreoElectronico" class="form-control" />
+                    <span asp-validation-for="UsuarioForm.CorreoElectronico" class="text-danger"></span>
+                </div>
+
+                <!-- CONTRASEÑA -->
+                <div class="mb-3 position-relative">
+                    <label asp-for="UsuarioForm.Clave" class="form-label"><strong>Clave</strong></label>
+                    <div class="input-group">
+                        <input asp-for="UsuarioForm.Clave" type="password" class="form-control" id="Input_NuevaClave" />
+                        <span class="input-group-text" onclick="togglePassword('Input_NuevaClave')">
+                            <i class="bi bi-eye-slash" id="icon_Input_NuevaClave"></i>
+                        </span>
+                    </div>
+                    <span asp-validation-for="UsuarioForm.Clave" class="text-danger"></span>
+                </div>
+
+                <!-- CONFIRMAR CONTRASEÑA -->
+                <div class="mb-3 position-relative">
+                    <label asp-for="UsuarioForm.ConfirmarClave" class="form-label"><strong>Confirmar Clave</strong></label>
+                    <div class="input-group">
+                        <input asp-for="UsuarioForm.ConfirmarClave" type="password" class="form-control" id="Input_ConfirmarClave" />
+                        <span class="input-group-text" onclick="togglePassword('Input_ConfirmarClave')">
+                            <i class="bi bi-eye-slash" id="icon_Input_ConfirmarClave"></i>
+                        </span>
+                    </div>
+                    <span asp-validation-for="UsuarioForm.ConfirmarClave" class="text-danger"></span>
+                    <span class="text-danger" id="errorConfirmacion"></span>
+                </div>
+
+                <!-- ROLES -->
+                <div class="mb-3">
+                    <label class="form-label"><strong>Roles Asociados</strong></label>
+                    <select asp-for="UsuarioForm.RolesSeleccionados"
+                            asp-items="Model.ListaRoles"
+                            class="form-select" multiple>
+                    </select>
+                    <span asp-validation-for="UsuarioForm.RolesSeleccionados" class="text-danger"></span>
+                </div>
+
+                <!-- ESTADO -->
+                <div class="mb-3">
+                    <label asp-for="UsuarioForm.Estado" class="form-label"><strong>Estado</strong></label>
+                    <select asp-for="UsuarioForm.Estado" class="form-select">
+                        <option value="">-- Seleccione estado --</option>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                    <span asp-validation-for="UsuarioForm.Estado" class="text-danger"></span>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script src="~/js/CrearUsuario.js"></script>

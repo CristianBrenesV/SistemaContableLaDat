@@ -1,0 +1,142 @@
+﻿@page
+@model SistemaContableLaDat.Pages.Estados.IndexModel
+@using SistemaContableLaDat.Entities.EstadosAsientosContables
+@{
+    ViewData["Title"] = "Administración de Estados";
+    Layout = "_PrincipalLayout";
+}
+<h1 class="mt-4">Administración de Estados de Asientos</h1>
+
+<p>
+    <a class="btn btn-dark" asp-page="Crear">
+        <i class="bi bi-plus-circle"></i> Nuevo Estado
+    </a>
+</p>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var estado in Model.Estados)
+            {
+                <tr>
+                    <td>@estado.IdEstadoAsiento</td>
+                    <td>@estado.Codigo</td>
+                    <td>@estado.Nombre</td>
+                    <td>@estado.Descripcion</td>
+                    <td>
+                        @{
+                            var badgeClase = estado.Estado switch
+                            {
+                                EstadoAsiento.Activo => "badge bg-success",
+                                EstadoAsiento.Inactivo => "badge bg-secondary",
+                                _ => "badge bg-light text-dark border"
+                            };
+                        }
+
+                        <span class="@badgeClase">
+                            @estado.Estado
+                        </span>
+                    </td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-dark"
+                           asp-page="Editar"
+                           asp-route-IdEstado="@estado.IdEstadoAsiento">
+                            <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+
+
+                        <button type="button"
+                                class="btn btn-sm btn-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalEliminar"
+                                data-id="@estado.IdEstadoAsiento"
+                                data-nombre="@estado.Nombre">
+                            <i class="bi bi-trash3"></i> Eliminar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<nav aria-label="Paginación de estados" class="mt-4">
+    <ul class="pagination pagination-dark justify-content-center">
+        @if (Model.PaginaActual > 1)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-route-pagina="@(Model.PaginaActual - 1)" aria-label="Anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        }
+
+        @for (int i = 1; i <= Model.TotalPaginas; i++)
+        {
+            <li class="page-item @(i == Model.PaginaActual ? "active" : "")">
+                <a class="page-link" asp-route-pagina="@i">@i</a>
+            </li>
+        }
+
+        @if (Model.PaginaActual < Model.TotalPaginas)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-route-pagina="@(Model.PaginaActual + 1)" aria-label="Siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        }
+    </ul>
+</nav>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-dark mt-3">
+        @TempData["Mensaje"]
+    </div>
+}
+
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Eliminar">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Desea eliminar el estado: <strong id="nombreEstado"></strong>?
+                </div>
+                <input type="hidden" name="idEstadoAsiento" id="estadoIdEliminar" />
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="submit" class="btn btn-dark">Sí, eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const modalEliminar = document.getElementById('modalEliminar');
+        modalEliminar.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const idEstado = button.getAttribute('data-id');
+            const nombreEstado = button.getAttribute('data-nombre');
+
+            document.getElementById('estadoIdEliminar').value = idEstado;
+            document.getElementById('nombreEstado').textContent = nombreEstado;
+        });
+    </script>
+}

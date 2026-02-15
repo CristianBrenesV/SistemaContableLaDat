@@ -1,0 +1,55 @@
+﻿@page
+@model SistemaContableLaDat.Pages.Roles.CrearRolModel
+@{
+    ViewData["Title"] = "Crear Rol";
+    Layout = "_PrincipalLayout";
+}
+<h1 class="mt-4">Crear Rol</h1>
+
+<a asp-page="/Roles/Index" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Regresar
+</a>
+
+<button type="submit" class="btn btn-dark" form="formCrearRol">
+    <i class="bi bi-save"></i> Guardar
+</button>
+
+
+<div class="container mt-5 d-flex">
+    <div class="card shadow-sm border-0 w-50" style="background-color: #d9d9d9;">
+        <div class="card-body">
+
+            <form id="formCrearRol" method="post">
+
+                <div class="mb-3">
+                    <label asp-for="Rol.IdRol" class="form-label"><strong>Id Rol</strong></label>
+                    <input asp-for="Rol.IdRol" class="form-control" />
+                    <span asp-validation-for="Rol.IdRol" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Rol.NombreRol" class="form-label"><strong>Nombre rol</strong></label>
+                    <input asp-for="Rol.NombreRol" class="form-control" />
+                    <span asp-validation-for="Rol.NombreRol" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Rol.Descripcion" class="form-label"><strong>Descripcion</strong></label>
+                    <input asp-for="Rol.Descripcion" class="form-control" />
+                    <span asp-validation-for="Rol.Descripcion" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Rol.Estado" class="form-label"><strong>Estado</strong></label>
+                    <select asp-for="Rol.Estado" class="form-select">
+                        <option value="">-- Seleccione estado --</option>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                    <span asp-validation-for="Rol.Estado" class="text-danger"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

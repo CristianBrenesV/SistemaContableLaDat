@@ -2,20 +2,30 @@
 using SistemaContableLaDat.Entities.Usuarios;
 using SistemaContableLaDat.Repository.Infrastructure;
 using SistemaContableLaDat.Service.Abstract;
+using SistemaContableLaDat.Service.Encriptado;
 using System.Data;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace SistemaContableLaDat.Repository.Usuarios
 {
     public class UsuarioService : IUsuarioService
     {
-
         private readonly UsuarioRepository _usuarioRepository;
+        private readonly IUsuarioRolService _usuarioRolService;
         private readonly IBitacoraService _bitacoraService;
+        private readonly IEncriptadoService _encriptadoService;
 
-        public UsuarioService(UsuarioRepository usuarioRepository, IBitacoraService bitacoraService)
+        public UsuarioService(
+            UsuarioRepository usuarioRepository,
+            IUsuarioRolService usuarioRolService,
+            IBitacoraService bitacoraService,
+            IEncriptadoService encriptadoService)
         {
             _usuarioRepository = usuarioRepository;
+            _usuarioRolService = usuarioRolService;
             _bitacoraService = bitacoraService;
+            _encriptadoService = encriptadoService;
         }
 
         public Task<IEnumerable<UsuarioEntity>> GetAllAsync()
@@ -23,20 +33,27 @@ namespace SistemaContableLaDat.Repository.Usuarios
             return _usuarioRepository.GetAllAsync();
         }
 
-        public Task<UsuarioEntity?> GetByIdAsync(string id_usuario)
+        public Task<UsuarioEntity?> GetByIdAsync(int IdUsuario)
         {
-            return _usuarioRepository.GetByIdAsync(id_usuario);
+            return _usuarioRepository.GetByIdAsync(IdUsuario);
         }
 
-        public async Task<int> InsertAsync(UsuarioEntity usuario, string idUsuarioEjecutor)
+        public async Task<int> InsertAsync(UsuarioEntity usuario, List<string> roles, int IdUsuario)
         {
             try
             {
+
                 var resultado = await _usuarioRepository.InsertAsync(usuario);
+
                 if (resultado == 1)
                 {
+                    foreach (var rolId in roles)
+                    {
+                        await _usuarioRolService.AsignarRolAsync(usuario.IdUsuario, rolId.ToString());
+                    }
+
                     await _bitacoraService.RegistrarAccionAsync(
-                        idUsuarioEjecutor,
+                        IdUsuario,
                         "Usuario creado",
                         new
                         {
@@ -53,12 +70,12 @@ namespace SistemaContableLaDat.Repository.Usuarios
             }
             catch (Exception ex)
             {
-                await _bitacoraService.RegistrarErrorAsync(idUsuarioEjecutor, ex.ToString());
+                await _bitacoraService.RegistrarErrorAsync(IdUsuario, ex.ToString());
                 throw;
             }
         }
 
-        public async Task<int> UpdateAsync(UsuarioEntity usuario, string idUsuarioEjecutor)
+        public async Task<int> UpdateAsync(UsuarioEntity usuario, List<string> roles, int IdUsuario)
         {
             try
             {
@@ -67,14 +84,22 @@ namespace SistemaContableLaDat.Repository.Usuarios
 
                 if (resultado == 1 && usuarioAnterior != null)
                 {
+                    var rolesActuales = await _usuarioRolService.GetRolesByUsuarioAsync(usuario.IdUsuario);
+
+                    foreach (var rolActual in rolesActuales)
+                    {
+                        await _usuarioRolService.RemoverRolAsync(usuario.IdUsuario, rolActual.IdRol);
+                    }
+
+                    foreach (var rolNuevo in roles)
+                    {
+                        await _usuarioRolService.AsignarRolAsync(usuario.IdUsuario, rolNuevo.ToString());
+                    }
+
                     await _bitacoraService.RegistrarAccionAsync(
-                        idUsuarioEjecutor,
+                        IdUsuario,
                         "Usuario actualizado",
-                        new
-                        {
-                            Antes = usuarioAnterior,
-                            Despues = usuario
-                        }
+                        new { Antes = usuarioAnterior, Despues = usuario }
                     );
                 }
 
@@ -82,33 +107,26 @@ namespace SistemaContableLaDat.Repository.Usuarios
             }
             catch (Exception ex)
             {
-                await _bitacoraService.RegistrarErrorAsync(idUsuarioEjecutor, ex.ToString());
+                await _bitacoraService.RegistrarErrorAsync(IdUsuario, ex.ToString());
                 throw;
             }
         }
 
-
-        public async Task<int> DeleteAsync(string id_usuario, string idUsuarioEjecutor)
+        public async Task<int> DeleteAsync(int IdUsuario)
         {
             try
             {
-                // 1. Obtener los datos actuales del usuario antes de eliminar
-                var usuarioExistente = await _usuarioRepository.GetByIdAsync(id_usuario);
+                var usuarioExistente = await _usuarioRepository.GetByIdAsync(IdUsuario);
 
                 if (usuarioExistente == null)
-                {
-                    // Puedes registrar un intento de eliminación fallido si lo deseas
-                    return 0; // No existe, no hay nada que eliminar
-                }
+                    return 0;
 
-                // 2. Eliminar
-                var resultado = await _usuarioRepository.DeleteAsync(id_usuario);
+                var resultado = await _usuarioRepository.DeleteAsync(IdUsuario);
 
-                // 3. Registrar en bitácora solo si fue exitoso
                 if (resultado == 1)
                 {
                     await _bitacoraService.RegistrarAccionAsync(
-                        idUsuarioEjecutor,
+                        IdUsuario,
                         "Usuario eliminado",
                         new
                         {
@@ -125,7 +143,7 @@ namespace SistemaContableLaDat.Repository.Usuarios
             }
             catch (Exception ex)
             {
-                await _bitacoraService.RegistrarErrorAsync(idUsuarioEjecutor, ex.ToString());
+                await _bitacoraService.RegistrarErrorAsync(IdUsuario, ex.ToString());
                 throw;
             }
         }
@@ -139,6 +157,80 @@ namespace SistemaContableLaDat.Repository.Usuarios
         {
             return _usuarioRepository.CuentaUsuariosAsync();
         }
+
+        public async Task<int> CambiarClaveAsync(int IdUsuario, string nuevaClave)
+        {
+            try
+            {
+                var usuarioExistente = await _usuarioRepository.GetByIdAsync(IdUsuario);
+
+                if (usuarioExistente == null)
+                    return 0;
+
+                var plaintext = Encoding.UTF8.GetBytes(nuevaClave);
+                var (ciphertext, tag, nonce) = _encriptadoService.Encriptar(plaintext);
+
+                var resultado = await _usuarioRepository.CambiarClaveAsync(IdUsuario, ciphertext, tag, nonce);
+
+                if (resultado == 1)
+                {
+                    await _bitacoraService.RegistrarAccionAsync(
+                        IdUsuario,
+                        "Cambio de clave",
+                        new
+                        {
+                            usuarioExistente.IdUsuario,
+                            usuarioExistente.Usuario,
+                            usuarioExistente.CorreoElectronico
+                        }
+                    );
+                }
+
+                return resultado;
+            }
+            catch (Exception ex)
+            {
+                await _bitacoraService.RegistrarErrorAsync(IdUsuario, ex.ToString());
+                throw;
+            }
+        }
+        public async Task<int> CambiarEstadoAsync(int IdUsuario, string nuevoEstado)
+        {
+            try
+            {
+                var usuarioExistente = await _usuarioRepository.GetByIdAsync(IdUsuario);
+                if (usuarioExistente == null)
+                    return 0;
+
+                var estadoAnterior = usuarioExistente.Estado;
+
+                var resultado = await _usuarioRepository.CambiarEstadoAsync(IdUsuario, nuevoEstado);
+
+                if (resultado == 1)
+                {
+                    await _bitacoraService.RegistrarAccionAsync(
+                        IdUsuario, 
+                        "Cambio de estado de usuario",
+                        new
+                        {
+                            IdUsuario = usuarioExistente.IdUsuario,
+                            NombreUsuario = usuarioExistente.NombreUsuario,
+                            ApellidoUsuario = usuarioExistente.ApellidoUsuario,
+                            EstadoAnterior = estadoAnterior.ToString(),
+                            EstadoNuevo = nuevoEstado
+                        }
+                    );
+                }
+
+                return resultado;
+            }
+            catch (Exception ex)
+            {
+                await _bitacoraService.RegistrarErrorAsync(IdUsuario, ex.ToString());
+                throw;
+            }
+        }
+
 
     }
 }

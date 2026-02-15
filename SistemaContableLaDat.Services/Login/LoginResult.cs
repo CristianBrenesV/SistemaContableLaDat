@@ -7,5 +7,7 @@ namespace SistemaContableLaDat.Service.Login
         public bool Exito { get; set; }
         public string Mensaje { get; set; } = string.Empty;
         public UsuarioEntity? Usuario { get; set; }
+
+        public bool UsuarioBloqueado { get; set; }
     }
 }

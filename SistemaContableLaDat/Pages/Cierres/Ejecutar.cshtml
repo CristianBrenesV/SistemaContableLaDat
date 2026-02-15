@@ -34,7 +34,7 @@
 
 <!-- Resumen del cierre -->
 <div class="card mb-4">
-    <div class="card-header bg-info text-white">
+    <div class="card-header bg-dark text-white">
         <h5 class="mb-0"><i class="bi bi-graph-up"></i> Resumen del Cierre</h5>
     </div>
     <div class="card-body">
@@ -129,14 +129,14 @@
 
                 @if (Model.Resultado.PuedeCerrar && Model.Resultado.Balanceado)
                 {
-                    <button type="submit" class="btn btn-success btn-lg"
+                    <button type="submit" class="btn btn-dark btn-lg"
                             onclick="return confirm('¿Está seguro de ejecutar el cierre contable? Esta acción no se puede deshacer.')">
                         <i class="bi bi-check-circle"></i> Ejecutar Cierre Contable
                     </button>
                 }
                 else
                 {
-                    <button type="submit" class="btn btn-success btn-lg" disabled>
+                    <button type="submit" class="btn btn-dark btn-lg" disabled>
                         <i class="bi bi-lock"></i> No se puede ejecutar cierre
                     </button>
                 }
@@ -229,12 +229,12 @@
                         .Sum(s => s.SaldoActual);
                     }
 
-                    <tr class="table-info">
+                    <tr class="table-secondary">
                         <td colspan="5" class="text-end">TOTAL DEUDORAS:</td>
                         <td class="text-end fw-bold">@totalDeudoras.ToString("C")</td>
                         <td></td>
                     </tr>
-                    <tr class="table-info">
+                    <tr class="table-secondary">
                         <td colspan="5" class="text-end">TOTAL ACREEDORAS:</td>
                         <td class="text-end fw-bold">@totalAcreedoras.ToString("C")</td>
                         <td></td>
