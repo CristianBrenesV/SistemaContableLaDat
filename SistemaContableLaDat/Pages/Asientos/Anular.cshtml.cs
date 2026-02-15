@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using SistemaContableLaDat.Entities.Asientos;
 using SistemaContableLaDat.Service.Asientos;
+using System.Security.Claims;
 
 namespace SistemaContableLaDat.Pages.Asientos
 {
@@ -15,17 +16,20 @@ namespace SistemaContableLaDat.Pages.Asientos
         }
 
         [BindProperty]
-        public AsientoEncabezadoEntity Asiento { get; set; }
+        public AsientoEncabezadoEntity Asiento { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
-            Asiento = await _asientoService.ObtenerParaEdicionAsync(id);
+            var asiento = await _asientoService.ObtenerParaEdicionAsync(id);
+            if (asiento == null) return NotFound();
 
-            if (Asiento == null) return NotFound();
+            if (asiento.IdEstadoAsiento == 5)
+            {
+                TempData["Error"] = "Este asiento ya se encuentra anulado.";
+                return RedirectToPage("/Asientos/Index");
+            }
 
-            if (Asiento.IdEstadoAsiento == 5)
-                return RedirectToPage("./Index");
-
+            Asiento = asiento;
             return Page();
         }
 
@@ -33,17 +37,19 @@ namespace SistemaContableLaDat.Pages.Asientos
         {
             try
             {
-                int idUsuario = int.Parse(User.FindFirst("IdUsuario")?.Value ?? "1");
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                int idUsuario = userIdClaim != null ? int.Parse(userIdClaim.Value) : 1;
 
                 await _asientoService.AnularAsync(id, idUsuario);
 
-                TempData["Mensaje"] = $"Asiento {id} anulado con éxito.";
-                return RedirectToPage("./Index");
+                TempData["Success"] = $"Asiento #{id} anulado correctamente.";
+
+                return LocalRedirect("/Asientos");
+
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError(string.Empty, ex.Message);
-                // Recargar datos si hay error
+                ModelState.AddModelError(string.Empty, "Error: " + ex.Message);
                 Asiento = await _asientoService.ObtenerParaEdicionAsync(id);
                 return Page();
             }

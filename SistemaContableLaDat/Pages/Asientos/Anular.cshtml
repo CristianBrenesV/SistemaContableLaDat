@@ -1,49 +1,51 @@
 ﻿@page "{id:int}"
 @model SistemaContableLaDat.Pages.Asientos.AnularModel
 @{
-    ViewData["Title"] = "Anular asiento contable";
+    ViewData["Title"] = "Confirmar Anulación";
     Layout = "_PrincipalLayout";
 }
 
-<div class="container mt-4">
-    <div class="card border-danger">
-        <div class="card-header bg-danger text-white">
-            <h4><i class="fas fa-exclamation-triangle"></i> Confirmar Anulación</h4>
-        </div>
-        <div class="card-body">
-            <p class="lead">¿Está seguro de que desea anular el siguiente asiento contable?</p>
-
-            <table class="table table-bordered">
-                <tr>
-                    <th width="30%">Código:</th>
-                    <td>@Model.Asiento.Codigo</td>
-                </tr>
-                <tr>
-                    <th>Fecha:</th>
-                    <td>@Model.Asiento.Fecha.ToShortDateString()</td>
-                </tr>
-                <tr>
-                    <th>Referencia:</th>
-                    <td>@Model.Asiento.Referencia</td>
-                </tr>
-            </table>
-
-            <div class="alert alert-warning">
-                <strong>Atención:</strong> Esta acción es irreversible y quedará registrada en la bitácora del sistema.
-            </div>
-
-            <form method="post">
-                <input type="hidden" asp-for="Asiento.IdAsiento" name="id" />
-
-                <div class="d-flex justify-content-end gap-2">
-                    <a asp-page="./Index" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancelar
-                    </a>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-check"></i> Confirmar Anulación
-                    </button>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger shadow-lg">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-shield-fill-exclamation"></i> Confirmar Anulación</h4>
                 </div>
-            </form>
+                <div class="card-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <p class="fs-5">¿Está seguro de que desea anular el asiento contable <strong>#@Model.Asiento.Consecutivo</strong>?</p>
+
+                    <div class="bg-light p-3 rounded mb-4 border">
+                        <div class="row">
+                            <div class="col-sm-4 fw-bold">Código:</div>
+                            <div class="col-sm-8">@Model.Asiento.Codigo</div>
+
+                            <div class="col-sm-4 fw-bold">Fecha:</div>
+                            <div class="col-sm-8">@Model.Asiento.Fecha.ToString("dd/MM/yyyy")</div>
+
+                            <div class="col-sm-4 fw-bold">Referencia:</div>
+                            <div class="col-sm-8">@Model.Asiento.Referencia</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning border-warning">
+                        <i class="bi bi-info-circle-fill"></i> Esta acción es irreversible y afectará los saldos de las cuentas involucradas.
+                    </div>
+
+                    <form method="post">
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="/Asientos" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger px-4">
+                                <i class="bi bi-check-lg"></i> Confirmar Anulación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
