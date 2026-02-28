@@ -18,6 +18,7 @@
                 <input type="hidden" asp-for="Encabezado.IdAsiento" />
                 <input type="hidden" asp-for="Encabezado.IdPeriodo" />
                 <input type="hidden" asp-for="Encabezado.Consecutivo" />
+                <input type="hidden" asp-for="DetallesJson" id="inputDetallesJson" />
 
                 <div class="row g-3 mb-4">
                     <div class="col-md-2">
@@ -26,11 +27,11 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">Fecha</label>
-                        <input asp-for="Encabezado.Fecha" type="date" class="form-control" />
+                        <input asp-for="Encabezado.Fecha" type="date" class="form-control" required />
                     </div>
                     <div class="col-md-7">
                         <label class="form-label fw-bold">Referencia (Descripción)</label>
-                        <input asp-for="Encabezado.Referencia" class="form-control" placeholder="Ej: Pago de servicios públicos" />
+                        <input asp-for="Encabezado.Referencia" class="form-control" placeholder="Ej: Pago de servicios públicos" required />
                     </div>
                 </div>
 
@@ -47,44 +48,14 @@
                     <table class="table table-bordered table-hover" id="tablaDetalles">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 35%;">Cuenta Contable</th>
+                                <th style="width: 40%;">Cuenta Contable</th>
                                 <th style="width: 15%;">Tipo</th>
-                                <th style="width: 20%;">Monto</th>
+                                <th style="width: 15%;">Monto</th>
                                 <th>Descripción</th>
                                 <th style="width: 50px;"></th>
                             </tr>
                         </thead>
                         <tbody id="tbodyDetalles">
-                            @for (int i = 0; i < Model.Detalles.Count; i++)
-                            {
-                                <tr class="fila-detalle">
-                                    <td>
-                                        <input type="hidden" name="Detalles[@i].IdAsientoDetalle" value="@Model.Detalles[i].IdAsientoDetalle" />
-                                        <input type="number" name="Detalles[@i].IdCuentaContable" value="@Model.Detalles[i].IdCuentaContable" class="form-control form-control-sm" required />
-                                        <small class="text-muted">ID: @Model.Detalles[i].IdCuentaContable</small>
-                                    </td>
-                                    <td>
-                                        <select name="Detalles[@i].TipoMovimiento" class="form-select form-select-sm select-tipo" onchange="recalcular()">
-                                            <option value="D" selected="@(Model.Detalles[i].TipoMovimiento == "D")">Débito</option>
-                                            <option value="C" selected="@(Model.Detalles[i].TipoMovimiento == "C")">Crédito</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="number" step="0.01" name="Detalles[@i].Monto"
-                                               value="@Model.Detalles[i].Monto.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
-                                               class="form-control form-control-sm text-end input-monto"
-                                               oninput="recalcular()" required />
-                                    </td>
-                                    <td>
-                                        <input type="text" name="Detalles[@i].Descripcion" value="@Model.Detalles[i].Descripcion" class="form-control form-control-sm" />
-                                    </td>
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="eliminarFila(this)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
                         </tbody>
                         <tfoot>
                             <tr class="table-secondary fw-bold">
@@ -112,6 +83,68 @@
 
 @section Scripts {
     <script>
+        const cuentasDisponibles = @Html.Raw(Json.Serialize(Model.Cuentas));
+        const detallesCargados = @Html.Raw(Model.DetallesJson);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (detallesCargados && detallesCargados.length > 0) {
+                detallesCargados.forEach(d => agregarFila(d));
+            } else {
+                agregarFila(); 
+            }
+        });
+
+        function agregarFila(datos = null) {
+            const tbody = document.getElementById('tbodyDetalles');
+            const tr = document.createElement('tr');
+            tr.className = "fila-detalle";
+
+            let opcionesCuentas = '<option value="">-- Seleccione Cuenta --</option>';
+            cuentasDisponibles.forEach(c => {
+                const selected = (datos && (datos.idCuentaContable || datos.IdCuentaContable) == c.idCuenta) ? 'selected' : '';
+                opcionesCuentas += `<option value="${c.idCuenta}" ${selected}>${c.codigoCuenta} - ${c.nombre}</option>`;
+            });
+
+            tr.innerHTML = `
+                <td>
+                    <select class="form-select form-select-sm select-cuenta" required>
+                        ${opcionesCuentas}
+                    </select>
+                </td>
+                <td>
+                    <select class="form-select form-select-sm select-tipo" onchange="recalcular()">
+                        <option value="D" ${(datos && datos.tipoMovimiento == 'D') ? 'selected' : ''}>Débito</option>
+                        <option value="C" ${(datos && datos.tipoMovimiento == 'C') ? 'selected' : ''}>Crédito</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="number" step="0.01" class="form-control form-control-sm text-end input-monto"
+                           value="${datos ? datos.monto : '0.00'}" oninput="recalcular()" required />
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm input-desc"
+                           value="${datos ? (datos.descripcion || '') : ''}" />
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="eliminarFila(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            recalcular();
+        }
+
+        function eliminarFila(boton) {
+            const filas = document.querySelectorAll('#tbodyDetalles tr');
+            if (filas.length > 1) {
+                boton.closest('tr').remove();
+                recalcular();
+            } else {
+                alert("El asiento debe tener al menos una línea.");
+            }
+        }
+
         function recalcular() {
             let debe = 0;
             let haber = 0;
@@ -119,20 +152,16 @@
             document.querySelectorAll('#tbodyDetalles tr').forEach(fila => {
                 const tipo = fila.querySelector('.select-tipo').value;
                 const monto = parseFloat(fila.querySelector('.input-monto').value) || 0;
-
                 if (tipo === 'D') debe += monto;
                 else haber += monto;
             });
 
-            document.getElementById('totalDebe').innerText = debe.toLocaleString('en-US', { minimumFractionDigits: 2 });
-            document.getElementById('totalHaber').innerText = haber.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            document.getElementById('totalDebe').innerText = debe.toFixed(2);
+            document.getElementById('totalHaber').innerText = haber.toFixed(2);
 
             const diff = Math.abs(debe - haber);
             const msgBalance = document.getElementById('msgBalance');
             const badge = document.getElementById('badgeEstado');
-            const btnGuardar = document.getElementById('btnGuardar');
-
-            btnGuardar.disabled = false;
 
             if (diff < 0.01 && (debe + haber) > 0) {
                 msgBalance.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Balanceado</span>';
@@ -145,57 +174,31 @@
             }
         }
 
-        function agregarFila() {
-            const tbody = document.getElementById('tbodyDetalles');
-            const index = tbody.querySelectorAll('tr').length;
+        document.getElementById('formAsiento').addEventListener('submit', function (e) {
+            const detalles = [];
+            let error = false;
 
-            const nuevaFila = `
-                <tr class="fila-detalle">
-                    <td>
-                        <input type="hidden" name="Detalles[${index}].IdAsientoDetalle" value="0" />
-                        <input type="number" name="Detalles[${index}].IdCuentaContable" class="form-control form-control-sm" required />
-                    </td>
-                    <td>
-                        <select name="Detalles[${index}].TipoMovimiento" class="form-select form-select-sm select-tipo" onchange="recalcular()">
-                            <option value="D">Débito</option>
-                            <option value="C">Crédito</option>
-                        </select>
-                    </td>
-                    <td>
-                        <input type="number" step="0.01" name="Detalles[${index}].Monto" value="0.00" class="form-control form-control-sm text-end input-monto" oninput="recalcular()" required />
-                    </td>
-                    <td>
-                        <input type="text" name="Detalles[${index}].Descripcion" class="form-control form-control-sm" />
-                    </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="eliminarFila(this)">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                </tr>`;
-            tbody.insertAdjacentHTML('beforeend', nuevaFila);
-            recalcular();
-        }
+            document.querySelectorAll('#tbodyDetalles tr').forEach(fila => {
+                const idCuenta = fila.querySelector('.select-cuenta').value;
+                const monto = parseFloat(fila.querySelector('.input-monto').value) || 0;
 
-        function eliminarFila(boton) {
-            if (confirm("¿Está seguro de eliminar esta línea?")) {
-                boton.closest('tr').remove();
-                reindexarFilas();
-                recalcular();
-            }
-        }
+                if (!idCuenta) error = true;
 
-        function reindexarFilas() {
-            document.querySelectorAll('#tbodyDetalles tr').forEach((fila, i) => {
-                fila.querySelectorAll('input, select').forEach(input => {
-                    const name = input.name;
-                    if (name) {
-                        input.name = name.replace(/\[\d+\]/, `[${i}]`);
-                    }
+                detalles.push({
+                    IdCuentaContable: parseInt(idCuenta),
+                    TipoMovimiento: fila.querySelector('.select-tipo').value,
+                    Monto: monto,
+                    Descripcion: fila.querySelector('.input-desc').value
                 });
             });
-        }
 
-        document.addEventListener('DOMContentLoaded', recalcular);
+            if (error) {
+                alert("Por favor, seleccione una cuenta contable para todas las líneas.");
+                e.preventDefault();
+                return;
+            }
+
+            document.getElementById('inputDetallesJson').value = JSON.stringify(detalles);
+        });
     </script>
 }
